@@ -1,0 +1,330 @@
+import { Theme } from "theme.slint";
+import { Icon } from "icons.slint";
+import { App, TrackItem } from "state.slint";
+
+export component IconButton inherits Rectangle {
+    in property <string> icon: "play";
+    in property <length> icon-size: 22px;
+    in property <color> tint: Theme.text;
+    in property <color> fill: transparent;
+    in property <length> box: 42px;
+    in property <bool> active: false;
+    width: box; height: box;
+    border-radius: box / 2;
+    background: active ? Theme.accent : fill;
+    animate background { duration: 160ms; }
+    Icon { name: root.icon; tint: root.active ? #ffffff : root.tint; size: root.icon-size; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+    TouchArea { width: 100%; height: 100%; clicked => { root.clicked(); } }
+    callback clicked();
+}
+
+export component TextButton inherits Rectangle {
+    in property <string> text: "Button";
+    in property <bool> primary: false;
+    in property <bool> compact: false;
+    in property <color> tint: primary ? #04140a : Theme.text;
+    height: compact ? 34px : 44px;
+    min-width: compact ? 66px : 112px;
+    border-radius: self.height / 2;
+    background: primary ? Theme.accent : Theme.surface-2;
+    border-width: primary ? 0px : 1px;
+    border-color: Theme.line;
+    horizontal-stretch: 0;
+    HorizontalLayout {
+        alignment: center;
+        padding-left: compact ? 16px : 22px;
+        padding-right: compact ? 16px : 22px;
+        Text {
+            text: root.text;
+            color: root.tint;
+            font-size: ((compact ? 12px : 13px) * Theme.font-scale);
+            font-weight: 700;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { root.clicked(); } }
+    callback clicked();
+}
+
+export component Chip inherits Rectangle {
+    in property <string> text: "Chip";
+    in property <bool> selected: false;
+    height: 34px;
+    min-width: 56px;
+    border-radius: 17px;
+    background: selected ? Theme.accent : Theme.surface-2;
+    border-width: selected ? 0px : 1px;
+    border-color: Theme.line;
+    HorizontalLayout {
+        alignment: center;
+        padding-left: 15px;
+        padding-right: 15px;
+        Text {
+            text: root.text;
+            color: selected ? #04140a : Theme.text-sub;
+            font-size: (12.5px * Theme.font-scale);
+            font-weight: 650;
+            horizontal-alignment: center;
+            vertical-alignment: center;
+        }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { root.clicked(); } }
+    callback clicked();
+}
+
+export component SectionTitle inherits HorizontalLayout {
+    in property <string> title: "Section";
+    in property <string> action: "See all";
+    in property <bool> show-action: true;
+    height: 36px;
+    alignment: space-between;
+    Text { text: root.title; color: Theme.text; font-size: (20px * Theme.font-scale); font-weight: 800; vertical-alignment: center; }
+    Text { text: root.action; visible: root.show-action; color: Theme.accent; font-size: (12.5px * Theme.font-scale); font-weight: 650; vertical-alignment: center; }
+}
+
+export component Cover inherits Rectangle {
+    in property <image> art;
+    in property <color> accent: Theme.accent;
+    in property <length> radius: 14px;
+    in property <length> icon-size: 24px;
+    clip: true;
+    border-radius: radius;
+    background: @linear-gradient(135deg, accent 0%, #16121f 100%);
+    Image { source: root.art; width: 100%; height: 100%; image-fit: cover; }
+    Icon { visible: root.art.width == 0; name: "lyrics"; tint: #ffffffcc; size: root.icon-size; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+}
+
+export component PlayBadge inherits Rectangle {
+    in property <bool> playing: false;
+    width: 38px; height: 38px; border-radius: 19px;
+    background: Theme.accent;
+    Icon { name: root.playing ? "pause" : "play"; tint: #ffffff; size: 20px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+}
+
+export component TrackRow inherits Rectangle {
+    in property <TrackItem> item;
+    in property <bool> show-art: true;
+    in property <bool> show-index: false;
+    in property <int> index: 0;
+    in property <bool> highlight: false;
+    width: 100%;
+    min-width: 0px;
+    height: 72px;
+    border-radius: 16px;
+    background: highlight ? Theme.surface-2 : transparent;
+    HorizontalLayout {
+        padding-left: 10px; padding-right: 6px;
+        spacing: 12px;
+        min-width: 0px;
+        if root.show-index : Text { text: root.index + 1; color: Theme.text-faint; font-size: (12px * Theme.font-scale); width: 18px;  }
+        if root.show-art : Cover { art: root.item.art; accent: root.item.accent; width: 52px; height: 52px; radius: 13px; icon-size: 22px; }
+        VerticalLayout {
+            spacing: 2px;
+            horizontal-stretch: 1;
+            min-width: 0px;
+            Text { text: root.item.title; color: root.highlight ? Theme.accent : Theme.text; font-size: (14.5px * Theme.font-scale); font-weight: 700; overflow: elide; min-width: 0px; width: 100%; }
+            Text { text: root.item.artist; color: Theme.text-sub; font-size: (11.5px * Theme.font-scale); overflow: elide; min-width: 0px; width: 100%; }
+        }
+        Text { text: root.item.duration-label; color: Theme.text-faint; font-size: (11px * Theme.font-scale); vertical-alignment: center; }
+        IconButton {
+            icon: root.item.liked ? "heart" : "heart-outline";
+            tint: root.item.liked ? Theme.accent : Theme.text-faint;
+            icon-size: 20px; box: 36px;
+            clicked => { App.toggle-like(root.item.id); }
+        }
+        IconButton {
+            icon: "more-horizontal"; tint: Theme.text-faint; icon-size: 20px; box: 34px;
+            clicked => { App.queue-add(root.item.id); }
+        }
+    }
+    TouchArea {
+        width: 100%; height: 100%;
+        clicked => { App.play-id(root.item.id); }
+    }
+}
+
+export component TrackCard inherits Rectangle {
+    in property <TrackItem> item;
+    in property <length> card-width: 146px;
+    width: card-width;
+    height: card-width + 58px;
+    background: transparent;
+    VerticalLayout {
+        spacing: 7px;
+        Cover { art: root.item.art; accent: root.item.accent; width: root.card-width; height: root.card-width; radius: 16px; icon-size: 32px; }
+        Text { text: root.item.title; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 700; overflow: elide; min-width: 0px; width: 100%; }
+        Text { text: root.item.artist; color: Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { App.play-id(root.item.id); } }
+}
+
+export component VerticalFader inherits Rectangle {
+    in property <float> value: 0;
+    in property <int> index: 0;
+    width: 26px;
+    height: 150px;
+    background: transparent;
+    Rectangle {
+        width: 5px; height: 118px; border-radius: 3px;
+        background: Theme.surface-3;
+        x: (parent.width - self.width) / 2;
+        y: 12px;
+    }
+    Rectangle {
+        width: 5px; height: 59px; border-radius: 3px;
+        background: Theme.accent;
+        x: (parent.width - self.width) / 2;
+        y: 12px + (1 - (root.value + 12) / 24) * 59px;
+    }
+    Rectangle {
+        width: 16px; height: 16px; border-radius: 8px;
+        background: #ffffff;
+        border-width: 3px; border-color: Theme.accent;
+        x: (parent.width - self.width) / 2;
+        y: 6px + (1 - (root.value + 12) / 24) * 118px;
+    }
+    TouchArea {
+        width: 100%; height: 100%;
+        moved => {
+            App.set-eq(root.index, Math.max(-12.0, Math.min(12.0, 12.0 - ((self.mouse-y - 6px) / 1px) / 118.0 * 24.0)));
+        }
+        clicked => {
+            App.set-eq(root.index, Math.max(-12.0, Math.min(12.0, 12.0 - ((self.mouse-y - 6px) / 1px) / 118.0 * 24.0)));
+        }
+    }
+}
+
+export component ProgressSlider inherits Rectangle {
+    in property <int> position: 0;
+    in property <int> duration: 1;
+    in property <bool> enabled: true;
+    height: 26px;
+    background: transparent;
+    property <float> frac: Math.max(0, Math.min(1, position / Math.max(1, duration)));
+    Rectangle { width: 100%; height: 4px; border-radius: 2px; background: Theme.surface-3; y: (parent.height - self.height) / 2; }
+    Rectangle { width: parent.width * frac; height: 4px; border-radius: 2px; background: Theme.accent; y: (parent.height - self.height) / 2; }
+    Rectangle { x: Math.max(0, parent.width * frac - 6px); y: (parent.height - 12px) / 2; width: 12px; height: 12px; border-radius: 6px; background: #ffffff; }
+    TouchArea {
+        width: 100%; height: 100%;
+        enabled: root.enabled;
+        clicked => { if (root.duration > 0) { App.seek(Math.round(self.mouse-x / self.width * root.duration)); } }
+        moved => { if (self.pressed && root.duration > 0) { App.seek(Math.round(self.mouse-x / self.width * root.duration)); } }
+    }
+}
+
+export component MiniPlayer inherits Rectangle {
+    height: 66px;
+    background: Theme.bg-elevated;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: Theme.line;
+    clip: true;
+    property <float> progress: App.duration > 0 ? Math.min(1, App.position / App.duration) : 0;
+    Rectangle {
+        width: parent.width * progress; height: 2px; background: Theme.accent;
+        y: parent.height - self.height;
+    }
+    HorizontalLayout {
+        padding-left: 8px; padding-right: 8px;
+        spacing: 11px;
+        Cover { art: App.current.art; accent: App.current.accent; width: 50px; height: 50px; radius: 13px; icon-size: 19px; }
+        VerticalLayout {
+            horizontal-stretch: 1; spacing: 1px; 
+            Text { text: App.current.title; color: Theme.text; font-size: (13.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+            Text { text: App.loading ? "Loading…" : App.current.artist; color: App.loading ? Theme.accent : Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
+        }
+        IconButton { icon: App.loading ? "timer" : (App.playing ? "pause" : "play"); tint: Theme.text; icon-size: 21px; box: 38px; clicked => { App.toggle-play(); } }
+        IconButton { icon: "next"; tint: Theme.text; icon-size: 21px; box: 36px; clicked => { App.next-track(); } }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { App.navigate("now-playing"); } }
+}
+
+export component BottomNav inherits Rectangle {
+    height: 64px;
+    background: Theme.nav;
+    border-width: 1px; border-color: Theme.line;
+    HorizontalLayout {
+        alignment: space-around;
+        padding-left: 10px; padding-right: 10px; padding-top: 4px; padding-bottom: 4px;
+        for tab in [{ id: "home", icon: "home", label: "Home" }, { id: "search", icon: "search", label: "Search" }, { id: "library", icon: "library", label: "Library" }, { id: "settings", icon: "settings", label: "Settings" }] : nav-item := Rectangle {
+            width: 76px; height: 54px; background: transparent;
+            property <bool> active: App.view == tab.id || (tab.id == "library" && (App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "queue"));
+            VerticalLayout {
+                alignment: center; spacing: 3px;
+                Rectangle {
+                    width: 42px; height: 26px; border-radius: 13px;
+                    background: nav-item.active ? Theme.surface-2 : transparent;
+                    Icon { name: tab.icon; tint: nav-item.active ? Theme.accent : Theme.text-faint; size: 22px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                }
+                Text { text: tab.label; color: nav-item.active ? Theme.text : Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: nav-item.active ? 700 : 600; horizontal-alignment: center; }
+            }
+            TouchArea { width: 100%; height: 100%; clicked => { if (tab.id == "library") { App.navigate("library"); } else { App.navigate(tab.id); } } }
+        }
+    }
+}
+
+export component EmptyState inherits VerticalLayout {
+    in property <string> icon: "lyrics";
+    in property <string> title: "Nothing here yet";
+    in property <string> subtitle: "";
+    spacing: 8px;
+    alignment: center;
+    padding: 28px;
+    Icon { name: root.icon; tint: Theme.text-faint; size: 38px;  }
+    Text { text: root.title; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 700;  }
+    Text { text: root.subtitle; color: Theme.text-sub; font-size: (12px * Theme.font-scale);  wrap: word-wrap; }
+}
+
+export component EmptyCard inherits Rectangle {
+    in property <string> icon: "album";
+    in property <string> title: "Nothing here yet";
+    in property <string> subtitle: "";
+    height: 142px;
+    border-radius: 18px;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.line;
+    VerticalLayout {
+        padding: 18px;
+        spacing: 7px;
+        alignment: center;
+        Rectangle {
+            width: 44px; height: 44px; border-radius: 22px; background: Theme.surface-2;
+            Icon { name: root.icon; tint: Theme.accent; size: 23px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+        }
+        Text { text: root.title; color: Theme.text; font-size: (15px * Theme.font-scale); font-weight: 750; horizontal-alignment: center; }
+        Text { text: root.subtitle; color: Theme.text-sub; font-size: (11px * Theme.font-scale); horizontal-alignment: center; wrap: word-wrap; }
+    }
+}
+
+export component ToggleSwitch inherits Rectangle {
+    in-out property <bool> checked: false;
+    width: 46px; height: 26px; border-radius: 13px;
+    background: checked ? Theme.accent : Theme.surface-3;
+    animate background { duration: 160ms; }
+    Rectangle { width: 20px; height: 20px; border-radius: 10px; background: #ffffff; y: 3px; x: checked ? 23px : 3px; animate x { duration: 160ms; } }
+    TouchArea { width: 100%; height: 100%; clicked => { root.checked = !root.checked; root.toggled(root.checked); } }
+    callback toggled(bool);
+}
+
+export component SettingRow inherits Rectangle {
+    in property <string> title: "Setting";
+    in property <string> subtitle: "";
+    in property <string> icon: "settings";
+    height: subtitle == "" ? 54px : 68px;
+    background: transparent;
+    HorizontalLayout {
+        spacing: 12px; padding-left: 4px; padding-right: 4px; 
+        Rectangle { width: 36px; height: 36px; border-radius: 10px; background: Theme.surface-2;
+            Icon { name: root.icon; tint: Theme.accent; size: 19px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+        }
+        VerticalLayout { horizontal-stretch: 1; spacing: 2px; 
+            Text { text: root.title; color: Theme.text; font-size: (13.5px * Theme.font-scale); font-weight: 600; overflow: elide; }
+            Text { text: root.subtitle; visible: root.subtitle != ""; color: Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
+        }
+        Icon { name: "chevron-right"; tint: Theme.text-faint; size: 18px; }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { root.clicked(); } }
+    callback clicked();
+}

@@ -1,0 +1,263 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App } from "state.slint";
+import { IconButton, VerticalFader, Chip, TextButton, ToggleSwitch, Cover } from "widgets.slint";
+
+component ValueSlider inherits Rectangle {
+    in property <string> label: "Value";
+    in-out property <float> value: 0;
+    in property <float> min: 0;
+    in property <float> max: 1;
+    in property <string> suffix: "";
+    height: 54px;
+    background: Theme.surface;
+    border-radius: 14px;
+    property <float> frac: Math.max(0, Math.min(1, (value - min) / Math.max(0.0001, max - min)));
+    HorizontalLayout {
+        padding-left: 12px; padding-right: 12px; padding-top: 7px; padding-bottom: 7px;
+        spacing: 8px; 
+        VerticalLayout { width: 92px; spacing: 0px; 
+            Text { text: root.label; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 600; }
+            Text { text: (Math.round(value * 100) / 100) + root.suffix; color: Theme.accent; font-size: (10.5px * Theme.font-scale); font-weight: 700; }
+        }
+        Rectangle {
+            height: 24px; horizontal-stretch: 1; background: transparent;
+            Rectangle { width: 100%; height: 4px; border-radius: 2px; background: Theme.surface-3; y: 10px; }
+            Rectangle { width: parent.width * frac; height: 4px; border-radius: 2px; background: Theme.accent; y: 10px; }
+            Rectangle { x: Math.max(0, parent.width * frac - 7px); y: 3px; width: 14px; height: 14px; border-radius: 7px; background: #ffffff; border-width: 3px; border-color: Theme.accent; }
+            TouchArea {
+                width: 100%; height: 100%;
+                clicked => { root.value = root.min + self.mouse-x / self.width * (root.max - root.min); root.changed(root.value); }
+                moved => { if (self.pressed) { root.value = root.min + self.mouse-x / self.width * (root.max - root.min); root.changed(root.value); } }
+            }
+        }
+    }
+    callback changed(float);
+}
+
+
+export component EqPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    VerticalLayout {
+        spacing: 0;
+
+        Rectangle {
+            height: 56px; background: transparent;
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 16px; spacing: 8px; 
+                IconButton { icon: "back"; tint: Theme.text; clicked => { App.go-back(); } }
+                Text { text: "Audio editor"; color: Theme.text; font-size: (18px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+                TextButton { text: "Reset"; compact: true; clicked => { App.apply-preset(0); } }
+            }
+        }
+
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 24px;
+                spacing: 14px;
+
+                // Now playing
+                Rectangle {
+                    height: 52px; border-radius: 14px; background: Theme.surface;
+                    HorizontalLayout {
+                        padding: 6px; spacing: 9px; 
+                        Cover { art: App.current.art; accent: App.current.accent; width: 40px; height: 40px; radius: 9px; icon-size: 16px; }
+                        VerticalLayout {
+                            horizontal-stretch: 1; spacing: 1px; 
+                            Text { text: App.current.title; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                            Text { text: "10-band equalizer"; color: Theme.text-sub; font-size: (10px * Theme.font-scale); }
+                        }
+                        Icon { name: "eq"; tint: Theme.accent; size: 18px; }
+                    }
+                }
+
+                // Presets
+                VerticalLayout {
+                    spacing: 8px;
+                    Text { text: "PRESETS"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    ScrollView {
+                        min-width: 0px;
+                        width: 100%; height: 32px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            for i in App.eq-presets.length : Chip {
+                                text: App.eq-presets[i];
+                                selected: App.eq-preset == i;
+                                clicked => { App.apply-preset(i); }
+                            }
+                        }
+                    }
+                }
+
+                // Faders
+                Rectangle {
+                    height: 210px;
+                    border-radius: 20px;
+                    background: Theme.surface;
+                    border-width: 1px; border-color: Theme.line;
+                    HorizontalLayout {
+                        padding-left: 8px; padding-right: 8px; padding-top: 12px;
+                        alignment: space-around;
+                        for i in 10 : VerticalLayout {
+                            alignment: start; spacing: 4px;
+                            Text { text: App.eq-gains[i] > 0 ? "+" + Math.round(App.eq-gains[i]) : Math.round(App.eq-gains[i]) + ""; color: Theme.text-faint; font-size: (8.5px * Theme.font-scale);  }
+                            VerticalFader { index: i; value: App.eq-gains[i]; }
+                            Text { text: ["31", "62", "125", "250", "500", "1k", "2k", "4k", "8k", "16k"][i]; color: Theme.text-sub; font-size: (8.5px * Theme.font-scale);  }
+                        }
+                    }
+                }
+
+                // Sound shaping
+                VerticalLayout {
+                    spacing: 10px;
+                    Text { text: "SOUND SHAPING"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    ValueSlider {
+                        label: "Speed"; value: App.speed; min: 0.5; max: 2.0; suffix: "×";
+                        changed(v) => { App.set-speed(v); }
+                    }
+                    ValueSlider {
+                        label: "Pitch"; value: App.pitch; min: -12; max: 12; suffix: " st";
+                        changed(v) => { App.set-pitch(v); }
+                    }
+                    ValueSlider {
+                        label: "Bass boost"; value: App.bass-boost; min: 0; max: 12; suffix: " dB";
+                        changed(v) => { App.set-bass(v); }
+                    }
+                    ValueSlider {
+                        label: "Reverb"; value: App.reverb; min: 0; max: 1; suffix: "";
+                        changed(v) => { App.set-reverb(v); }
+                    }
+                }
+
+                // Dynamics chain (compressor + limiter)
+                VerticalLayout {
+                    spacing: 10px;
+                    Text { text: "DYNAMICS"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    Rectangle {
+                        height: 58px; border-radius: 16px; background: Theme.surface;
+                        HorizontalLayout {
+                            padding-left: 12px; padding-right: 12px; spacing: 10px;
+                            Rectangle { width: 34px; height: 34px; border-radius: 9px; background: Theme.surface-2;
+                                Icon { name: "eq"; tint: Theme.accent; size: 18px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                            }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Compressor"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: "Glue the mix · soft-knee gain control"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            ToggleSwitch { checked: App.compressor; toggled(v) => { App.set-compressor(v); } }
+                        }
+                    }
+                    if App.compressor : VerticalLayout {
+                        spacing: 8px;
+                        ValueSlider { label: "Threshold"; value: App.comp-threshold; min: -48; max: 0; suffix: " dB"; changed(v) => { App.set-comp-threshold(v); } }
+                        ValueSlider { label: "Ratio"; value: App.comp-ratio; min: 1; max: 20; suffix: ":1"; changed(v) => { App.set-comp-ratio(v); } }
+                        ValueSlider { label: "Attack"; value: App.comp-attack; min: 1; max: 200; suffix: " ms"; changed(v) => { App.set-comp-attack(v); } }
+                        ValueSlider { label: "Release"; value: App.comp-release; min: 20; max: 1000; suffix: " ms"; changed(v) => { App.set-comp-release(v); } }
+                        ValueSlider { label: "Makeup"; value: App.comp-makeup; min: 0; max: 24; suffix: " dB"; changed(v) => { App.set-comp-makeup(v); } }
+                    }
+                    Rectangle {
+                        height: 58px; border-radius: 16px; background: Theme.surface;
+                        HorizontalLayout {
+                            padding-left: 12px; padding-right: 12px; spacing: 10px;
+                            Rectangle { width: 34px; height: 34px; border-radius: 9px; background: Theme.surface-2;
+                                Icon { name: "volume"; tint: Theme.accent; size: 18px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                            }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Brickwall limiter"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: "Transparent clip protection"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            ToggleSwitch { checked: App.limiter; toggled(v) => { App.set-limiter(v); } }
+                        }
+                    }
+                    if App.limiter : ValueSlider { label: "Ceiling"; value: App.limiter-ceiling; min: -24; max: 0; suffix: " dB"; changed(v) => { App.set-limiter-ceiling(v); } }
+                }
+
+                // Saved profiles
+                VerticalLayout {
+                    spacing: 8px;
+                    Text { text: "MY PROFILES"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    HorizontalLayout { spacing: 8px;
+                        ScrollView {
+                            min-width: 0px;
+                            width: 100%; height: 32px;
+                            HorizontalLayout {
+                                spacing: 8px;
+                                for i in App.eq-profiles.length : Chip {
+                                    text: App.eq-profiles[i];
+                                    selected: false;
+                                    clicked => { App.apply-profile(i); }
+                                }
+                                if App.eq-profiles.length == 0 : Text { text: "No saved presets yet"; color: Theme.text-faint; font-size: (10.5px * Theme.font-scale); vertical-alignment: center; }
+                            }
+                        }
+                        TextButton { text: "Save"; compact: true; clicked => { App.save-profile(); } }
+                    }
+                }
+
+                // Toggles
+                Rectangle {
+                    height: 58px; border-radius: 16px; background: Theme.surface;
+                    HorizontalLayout {
+                        padding-left: 12px; padding-right: 12px; spacing: 10px; 
+                        Rectangle { width: 34px; height: 34px; border-radius: 9px; background: Theme.surface-2;
+                            Icon { name: "volume"; tint: Theme.accent; size: 18px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                        }
+                        VerticalLayout { horizontal-stretch: 1; spacing: 1px; 
+                            Text { text: "Volume normalizer"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                            Text { text: "Even out quiet and loud tracks"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                        }
+                        ToggleSwitch { checked: App.normalizer; toggled(v) => { App.toggle-normalizer(); } }
+                    }
+                }
+
+                // Sleep timer
+                VerticalLayout {
+                    spacing: 8px;
+                    Text { text: "SLEEP TIMER"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    ScrollView {
+                        min-width: 0px;
+                        width: 100%; height: 32px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            for m in [0, 5, 10, 15, 30, 45, 60] : Chip {
+                                text: m == 0 ? "Off" : m + " min";
+                                selected: App.sleep-minutes == m;
+                                clicked => { App.set-sleep(m); }
+                            }
+                        }
+                    }
+                    if App.sleep-minutes > 0 : Text { text: "Stops playback in " + App.sleep-label; color: Theme.accent; font-size: (11px * Theme.font-scale); }
+                }
+
+                // Scene presets
+                VerticalLayout {
+                    spacing: 8px;
+                    Text { text: "SCENES"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    GridLayout {
+                        spacing: 10px;
+                        for scene in [
+                            { title: "Slowed + reverb", sub: "0.82× · hall", id: 6 },
+                            { title: "Nightcore", sub: "1.28× · bright", id: 7 },
+                            { title: "Bass worship", sub: "+9 dB low", id: 8 },
+                            { title: "Clear sound", sub: "flat + vocal", id: 9 }
+                        ] : Rectangle {
+                            height: 64px; border-radius: 14px; background: Theme.surface;
+                            VerticalLayout { padding: 10px; spacing: 2px; 
+                                Text { text: scene.title; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 700; }
+                                Text { text: scene.sub; color: Theme.text-sub; font-size: (10px * Theme.font-scale); }
+                            }
+                            TouchArea { width: 100%; height: 100%; clicked => { App.apply-preset(scene.id); } }
+                        }
+                    }
+                }
+
+                Rectangle { height: 10px; }
+            }
+        }
+    }
+}

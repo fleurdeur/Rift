@@ -1,0 +1,10 @@
+/target
+/jniLibs
+/android/build
+/android/.gradle
+*.apk
+*.aab
+*.jks
+*.keystore
+.DS_Store
+riff.log

@@ -1,0 +1,26 @@
+// Rift for Android — design tokens
+export global Theme {
+    in-out property <bool> light: false;
+    in-out property <color> accent: #1ed760;
+    in-out property <color> accent-2: #1db954;
+    in-out property <float> font-scale: 1.0;
+    in-out property <bool> dynamic: true;
+
+    in-out property <color> bg: light ? #f5f7f6 : #07090a;
+    in-out property <color> bg-elevated: light ? #ffffff : #0e1114;
+    in-out property <color> surface: light ? #ffffff : #12161a;
+    in-out property <color> surface-2: light ? #e9efeb : #1a2026;
+    in-out property <color> surface-3: light ? #dfe7e1 : #242c34;
+    in-out property <color> line: light ? #dbe4dd : #232a31;
+    in-out property <color> text: light ? #101613 : #f5f7f9;
+    in-out property <color> text-sub: light ? #5b6860 : #9aa4ae;
+    in-out property <color> text-faint: light ? #849188 : #6c7681;
+    in-out property <color> nav: light ? #ffffff : #0a0d0f;
+    in-out property <color> danger: #ff5c74;
+    in-out property <color> success: #39d98a;
+
+    in-out property <brush> accent-grad: @linear-gradient(135deg, accent 0%, accent-2 100%);
+    in-out property <brush> hero-grad: @linear-gradient(145deg, #1ed760 0%, #0f7a3a 42%, #072417 100%);
+    in-out property <brush> glass: @linear-gradient(160deg, #ffffff18 0%, #ffffff05 100%);
+
+}

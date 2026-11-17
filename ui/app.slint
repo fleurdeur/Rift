@@ -1,0 +1,84 @@
+export { App, TrackItem, PlaylistItem, AlbumItem, LyricLine } from "state.slint";
+export { Theme } from "theme.slint";
+import { Theme } from "theme.slint";
+import { Icon } from "icons.slint";
+import { App } from "state.slint";
+import { MiniPlayer, BottomNav } from "widgets.slint";
+import { HomePage } from "home.slint";
+import { SearchPage } from "search.slint";
+import { LibraryPage, TrackListPage, AlbumPage, ArtistPage, PlaylistPage, QueuePage } from "library.slint";
+import { PlayerPage } from "player.slint";
+import { EqPage } from "eq.slint";
+import { SettingsPage, ImportPage, SleepPage } from "settings.slint";
+
+export component AppWindow inherits Window {
+    title: "Rift";
+    width: 412px;
+    height: 892px;
+    background: Theme.bg;
+    default-font-family: "sans-serif";
+
+    property <bool> unused-main-view: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "import" || App.view == "sleep";
+    property <bool> show-chrome: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "import" || App.view == "sleep";
+
+    VerticalLayout {
+        spacing: 0;
+
+        Rectangle {
+            vertical-stretch: 1;
+            min-height: 0px;
+            background: transparent;
+            clip: true;
+
+            if App.view == "home" : HomePage {}
+            if App.view == "search" : SearchPage {}
+            if App.view == "library" : LibraryPage {}
+            if App.view == "liked" : TrackListPage { heading: "Liked songs"; subheading: App.liked-count + " tracks you love"; icon: "heart"; }
+            if App.view == "local" : TrackListPage { heading: "My files"; subheading: App.local-count + " local tracks · FLAC, WAV, MP3, OGG, M4A"; icon: "folder"; }
+            if App.view == "history" : TrackListPage { heading: "History"; subheading: "Everything you've played recently"; icon: "history"; }
+            if App.view == "albums" : TrackListPage { heading: "Albums"; subheading: "From your liked and local music"; icon: "album"; }
+            if App.view == "album" : AlbumPage {}
+            if App.view == "artist" : ArtistPage {}
+            if App.view == "playlist" : PlaylistPage {}
+            if App.view == "queue" : QueuePage {}
+            if App.view == "settings" : SettingsPage {}
+            if App.view == "import" : ImportPage {}
+            if App.view == "sleep" : SleepPage {}
+            if App.view == "eq" : EqPage {}
+        }
+
+        if App.current.id != "" && root.show-chrome && App.view != "now-playing" && App.view != "lyrics" : HorizontalLayout {
+            padding-left: 14px; padding-right: 14px; padding-bottom: 10px; padding-top: 6px;
+            MiniPlayer {}
+        }
+
+        if root.show-chrome : BottomNav {}
+
+        if App.offline && App.view == "home" : Rectangle {
+            height: 24px; background: Theme.surface-2;
+            Text { text: "Offline · showing your library"; color: Theme.text-sub; font-size: (10px * Theme.font-scale);  vertical-alignment: center; }
+        }
+    }
+
+    // Full-screen player
+    if App.view == "now-playing" || App.view == "lyrics" : PlayerPage {}
+
+    // Toast
+    if App.toast-visible : Rectangle {
+        x: 24px;
+        y: parent.height - 150px;
+        width: parent.width - 48px;
+        height: 44px;
+        border-radius: 22px;
+        background: Theme.surface-3;
+        border-width: 1px;
+        border-color: Theme.line;
+        opacity: App.toast-visible ? 1 : 0;
+        animate opacity { duration: 180ms; }
+        HorizontalLayout {
+            padding-left: 16px; padding-right: 16px; spacing: 8px; 
+            Icon { name: "check"; tint: Theme.success; size: 16px; }
+            Text { text: App.toast; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 600; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; }
+        }
+    }
+}

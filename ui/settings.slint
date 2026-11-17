@@ -1,0 +1,358 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App } from "state.slint";
+import { IconButton, SettingRow, ToggleSwitch, Chip, TextButton, Cover } from "widgets.slint";
+
+component SettingsGroup inherits Rectangle {
+    in property <string> title: "GROUP";
+    width: 100%;
+    min-width: 0px;
+    background: Theme.surface;
+    border-radius: 20px;
+    border-width: 1px;
+    border-color: Theme.line;
+    VerticalLayout {
+        min-width: 0px;
+        padding: 14px;
+        spacing: 12px;
+        Text { text: root.title; color: Theme.text-faint; font-size: (9px * Theme.font-scale); font-weight: 800; letter-spacing: 1.4px; }
+        @children
+    }
+}
+
+component ImportTip inherits Rectangle {
+    in property <string> title: "";
+    in property <string> sub: "";
+    height: 54px; border-radius: 13px; background: Theme.surface;
+    HorizontalLayout { padding-left: 12px; padding-right: 12px; spacing: 10px; 
+        Icon { name: "check"; tint: Theme.success; size: 17px; }
+        VerticalLayout { horizontal-stretch: 1; spacing: 1px; 
+            Text { text: root.title; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 700; }
+            Text { text: root.sub; color: Theme.text-sub; font-size: (10px * Theme.font-scale); overflow: elide; }
+        }
+    }
+}
+
+
+export component SettingsPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 58px; background: transparent;
+            HorizontalLayout {
+                padding-left: 18px; padding-right: 18px; 
+                Text { text: "Settings"; color: Theme.text; font-size: (24px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+                IconButton { icon: "sparkle"; tint: Theme.accent; clicked => { App.refresh-home(); } }
+            }
+        }
+
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 22px;
+                spacing: 16px;
+
+                // Profile
+                Rectangle {
+                    height: 106px; border-radius: 22px; clip: true;
+                    background: @linear-gradient(140deg, Theme.accent 0%, #1a1626 100%);
+                    Rectangle { x: parent.width - 74px; y: -24px; width: 150px; height: 150px; border-radius: 75px; background: #ffffff12; }
+                    HorizontalLayout {
+                        padding: 16px; spacing: 14px; 
+                        Rectangle { width: 64px; height: 64px; border-radius: 32px; background: #ffffff25;
+                            Icon { name: "person"; tint: #ffffff; size: 32px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                        }
+                        VerticalLayout { horizontal-stretch: 1; spacing: 4px; 
+                            TextInput {
+                                text: App.account-name;
+                                color: #ffffff;
+                                font-size: (18px * Theme.font-scale);
+                                font-weight: 800;
+                                single-line: true;
+                                edited => { App.set-account-name(self.text); }
+                            }
+                            Text { text: App.account-sub; color: #ffffffb8; font-size: (11px * Theme.font-scale); }
+                            Text { text: App.liked-count + " liked · " + App.playlists.length + " playlists"; color: #ffffff90; font-size: (10px * Theme.font-scale); }
+                        }
+                    }
+                }
+
+                // Appearance
+                SettingsGroup { title: "APPEARANCE";
+                    VerticalLayout {
+                        spacing: 4px;
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "sparkle"; tint: Theme.accent; size: 18px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Accent color"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: "Dynamic color follows album art"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            ToggleSwitch { checked: App.dynamic-color; toggled(v) => { App.set-dynamic(v); } }
+                        }
+                        ScrollView {
+                            min-width: 0px;
+                            width: 100%; height: 38px;
+                            HorizontalLayout {
+                                spacing: 9px;
+                                for i in App.accents.length : Rectangle {
+                                    width: 30px; height: 30px; border-radius: 15px;
+                                    background: App.accents[i];
+                                    border-width: App.accent-index == i ? 3px : 0px;
+                                    border-color: #ffffff;
+                                    TouchArea { width: 100%; height: 100%; clicked => { App.set-accent(i); } }
+                                }
+                            }
+                        }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "album"; tint: Theme.accent; size: 18px; }
+                            Text { text: "Light mode"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; horizontal-stretch: 1; vertical-alignment: center; }
+                            ToggleSwitch { checked: App.theme-light; toggled(v) => { App.set-theme-light(v); } }
+                        }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "sort"; tint: Theme.accent; size: 18px; }
+                            Text { text: "Text size"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; horizontal-stretch: 1; vertical-alignment: center; }
+                            IconButton { icon: "minus"; tint: Theme.text-sub; icon-size: 13px; box: 28px; fill: Theme.surface-2; clicked => { App.set-font-scale(Math.max(0.85, App.font-scale - 0.05)); } }
+                            Text { text: Math.round(App.font-scale * 100) + "%"; color: Theme.text-sub; font-size: (11px * Theme.font-scale); width: 38px;  }
+                            Rectangle { width: 28px; height: 28px; border-radius: 14px; background: Theme.surface-2;
+                                Icon { name: "add"; tint: Theme.text-sub; size: 13px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                                TouchArea { width: 100%; height: 100%; clicked => { App.set-font-scale(Math.min(1.35, App.font-scale + 0.05)); } }
+                            }
+                        }
+                    }
+                }
+
+                // Playback
+                SettingsGroup { title: "PLAYBACK";
+                    VerticalLayout {
+                        spacing: 4px;
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "eq"; tint: Theme.accent; size: 18px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Audio quality"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: App.audio-quality + " quality · lossless when available"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
+                            }
+                            HorizontalLayout { spacing: 5px;
+                                for quality in ["Low", "High", "Best"] : Chip { text: quality; selected: App.audio-quality == quality; clicked => { App.set-quality(quality); } }
+                            }
+                        }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "volume"; tint: Theme.accent; size: 18px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Volume normalizer"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: "Keep volume consistent"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            ToggleSwitch { checked: App.normalizer; toggled(v) => { App.toggle-normalizer(); } }
+                        }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        HorizontalLayout { spacing: 8px; 
+                            Icon { name: "sparkle"; tint: Theme.accent; size: 18px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: "Visualizer"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: "Live spectrum in Now Playing"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            ToggleSwitch { checked: App.visualizer-on; toggled(v) => { App.visualizer-on = v; App.save-settings(); } }
+                        }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Equalizer & audio editor"; subtitle: "10-band EQ · compressor · limiter"; icon: "eq"; clicked => { App.navigate("eq"); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Sleep timer"; subtitle: App.sleep-minutes > 0 ? App.sleep-label : "Off"; icon: "timer"; clicked => { App.navigate("sleep"); } }
+                    }
+                }
+
+                // Spotify
+                SettingsGroup { title: "SPOTIFY";
+                    VerticalLayout {
+                        spacing: 8px;
+                        HorizontalLayout { spacing: 8px;
+                            Icon { name: "sparkle"; tint: App.spotify-connected ? Theme.success : Theme.text-faint; size: 18px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px;
+                                Text { text: App.spotify-connected ? "Spotify connected" : "Connect Spotify"; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 600; }
+                                Text { text: App.spotify-status; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
+                            }
+                        }
+                        Text { text: "Client ID"; color: Theme.text-faint; font-size: (10px * Theme.font-scale); }
+                        Rectangle {
+                            height: 44px; border-radius: 12px; background: Theme.surface-2; border-width: 1px; border-color: Theme.line;
+                            TextInput {
+                                x: 12px; y: 0px; width: parent.width - 24px; height: 100%;
+                                text: App.spotify-client-id;
+                                color: Theme.text;
+                                font-size: (12px * Theme.font-scale);
+                                single-line: true;
+                                edited => { App.set-spotify-client-id(self.text); }
+                            }
+                        }
+                        Text { text: "Client Secret"; color: Theme.text-faint; font-size: (10px * Theme.font-scale); }
+                        Rectangle {
+                            height: 44px; border-radius: 12px; background: Theme.surface-2; border-width: 1px; border-color: Theme.line;
+                            TextInput {
+                                x: 12px; y: 0px; width: parent.width - 24px; height: 100%;
+                                text: App.spotify-client-secret;
+                                color: Theme.text;
+                                font-size: (12px * Theme.font-scale);
+                                single-line: true;
+                                edited => { App.set-spotify-client-secret(self.text); }
+                            }
+                        }
+                        TextButton { text: App.spotify-connected ? "Reconnect" : "Connect"; compact: false; clicked => { App.connect-spotify(); } }
+                        Text {
+                            text: "Official Web API catalog. Spotify limits third-party playback to 30-second previews; Rift automatically uses a matching local FLAC when you own one.";
+                            color: Theme.text-faint;
+                            font-size: (9.5px * Theme.font-scale);
+                            wrap: word-wrap;
+                        }
+                    }
+                }
+
+                // Library
+                SettingsGroup { title: "LIBRARY & STORAGE";
+                    VerticalLayout {
+                        spacing: 4px;
+                        SettingRow { title: "Scan local music"; subtitle: App.scan-busy ? "Scanning…" : "Music, Downloads and Rift folders"; icon: "folder"; clicked => { App.scan-library(); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Import playlist"; subtitle: "YouTube, SoundCloud or Spotify link"; icon: "download"; clicked => { App.navigate("import"); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Cached audio"; subtitle: App.cache-size + " used by Rift"; icon: "album"; clicked => { App.clear-cache(); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Download quality"; subtitle: App.download-quality; icon: "download"; clicked => { App.download-quality = App.download-quality == "Best" ? "Data saver" : "Best"; App.save-settings(); } }
+                    }
+                }
+
+                // About
+                SettingsGroup { title: "ABOUT";
+                    VerticalLayout {
+                        spacing: 4px;
+                        SettingRow { title: "Rift for Android"; subtitle: "Version 1.0.0 · native Rust"; icon: "sparkle"; clicked => { App.open-url("https://github.com/fleurdeur/Rift"); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Source code"; subtitle: "github.com/fleurdeur/Rift"; icon: "person"; clicked => { App.open-url("https://github.com/fleurdeur/Rift"); } }
+                        Rectangle { height: 1px; background: Theme.line; }
+                        SettingRow { title: "Licenses"; subtitle: "MIT · Slint · Symphonia · Rodio"; icon: "library"; clicked => { App.toast-message("Open-source licenses are included in the repository"); } }
+                    }
+                }
+
+                Text { text: "Made for humans. No ads. No tracking. Never."; color: Theme.text-faint; font-size: (10px * Theme.font-scale);  }
+
+                Rectangle { height: 6px; }
+            }
+        }
+    }
+}
+
+export component ImportPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 56px; background: transparent;
+            HorizontalLayout {
+                padding-left: 10px; padding-right: 16px; spacing: 8px; 
+                IconButton { icon: "back"; tint: Theme.text; clicked => { App.go-back(); } }
+                Text { text: "Import playlist"; color: Theme.text; font-size: (18px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+            }
+        }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px; spacing: 14px;
+
+                Rectangle {
+                    height: 150px; border-radius: 22px; clip: true;
+                    background: @linear-gradient(145deg, Theme.accent 0%, #1c1727 100%);
+                    VerticalLayout { padding: 18px; spacing: 6px; 
+                        Icon { name: "download"; tint: #ffffff; size: 30px; }
+                        Text { text: "Bring your playlists"; color: #ffffff; font-size: (20px * Theme.font-scale); font-weight: 800; }
+                        Text { text: "Paste a public link and Rift will find the tracks."; color: #ffffffb8; font-size: (11px * Theme.font-scale);  }
+                    }
+                }
+
+                Text { text: "SOURCE"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                ScrollView {
+                    min-width: 0px;
+                    width: 100%; height: 32px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        for s in App.import-sources : Chip { text: s; selected: App.import-source == s; clicked => { App.set-import-source(s); } }
+                    }
+                }
+
+                Text { text: "PLAYLIST LINK"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                Rectangle {
+                    height: 52px; border-radius: 14px; background: Theme.surface; border-width: 1px; border-color: Theme.line;
+                    HorizontalLayout { padding-left: 12px; padding-right: 12px; spacing: 8px; 
+                        Icon { name: "library"; tint: Theme.text-faint; size: 18px; }
+                        TextInput {
+                            text: App.import-url;
+                            color: Theme.text;
+                            font-size: (12px * Theme.font-scale);
+                            single-line: true;
+                            horizontal-stretch: 1;
+                            edited => { App.set-import-url(self.text); }
+                            accepted => { App.import-playlist(); }
+                        }
+                    }
+                }
+
+                Text { text: App.import-status; visible: App.import-status != ""; color: Theme.accent; font-size: (11px * Theme.font-scale); wrap: word-wrap; }
+                if App.import-busy : Rectangle {
+                    height: 6px; border-radius: 3px; background: Theme.surface-3;
+                    Rectangle { width: parent.width * (App.import-progress / 100); height: 6px; border-radius: 3px; background: Theme.accent; }
+                }
+
+                TextButton { text: App.import-busy ? "Importing…" : "Import playlist"; primary: true; clicked => { App.import-playlist(); } }
+
+                VerticalLayout { spacing: 8px;
+                    Text { text: "SUPPORTED"; color: Theme.text-faint; font-size: (9.5px * Theme.font-scale); font-weight: 800; letter-spacing: 1.5px; }
+                    ImportTip { title: "YouTube"; sub: "Public playlist or mix links, including music.youtube.com"; }
+                    ImportTip { title: "SoundCloud"; sub: "Public sets and user playlists"; }
+                    ImportTip { title: "Spotify"; sub: "Public playlist links (resolved by title search)"; }
+                }
+                Rectangle { height: 6px; }
+            }
+        }
+    }
+}
+
+export component SleepPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 56px; background: transparent;
+            HorizontalLayout { padding-left: 10px; padding-right: 16px; spacing: 8px; 
+                IconButton { icon: "back"; tint: Theme.text; clicked => { App.go-back(); } }
+                Text { text: "Sleep timer"; color: Theme.text; font-size: (18px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+            }
+        }
+        VerticalLayout {
+            padding: 24px; spacing: 18px; alignment: center;
+            Rectangle { width: 120px; height: 120px; border-radius: 60px; background: @linear-gradient(135deg, Theme.accent 0%, #1c1727 100%);
+                Icon { name: "timer"; tint: #ffffff; size: 52px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+            }
+            Text { text: App.sleep-minutes > 0 ? "Stopping in " + App.sleep-label : "Sleep timer is off"; color: Theme.text; font-size: (20px * Theme.font-scale); font-weight: 800;  }
+            Text { text: "Playback fades out and pauses automatically when the timer ends."; color: Theme.text-sub; font-size: (12px * Theme.font-scale);  wrap: word-wrap; }
+            GridLayout {
+                spacing: 10px;
+                for m in [0, 5, 10, 15, 30, 45, 60, 90] : Rectangle {
+                    height: 52px; border-radius: 16px;
+                    background: App.sleep-minutes == m ? Theme.accent : Theme.surface;
+                    Text { text: m == 0 ? "Off" : m + " min"; color: App.sleep-minutes == m ? #ffffff : Theme.text; font-size: (13px * Theme.font-scale); font-weight: 700;  vertical-alignment: center; }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.set-sleep(m); } }
+                }
+            }
+            if App.sleep-minutes > 0 : TextButton { text: "Cancel timer"; clicked => { App.set-sleep(0); } }
+        }
+    }
+}

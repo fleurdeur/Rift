@@ -1,0 +1,348 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App } from "state.slint";
+import { SectionTitle, TrackRow, TrackCard, Cover, Chip, TextButton, EmptyState, EmptyCard, IconButton, PlayBadge } from "widgets.slint";
+
+component DetailTopBar inherits Rectangle {
+    in property <string> title: "";
+    height: 54px; background: transparent;
+    HorizontalLayout {
+        padding-left: 10px; padding-right: 16px; spacing: 8px; 
+        IconButton { icon: "back"; tint: Theme.text; clicked => { App.go-back(); } }
+        Text { text: root.title; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 700; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; }
+        IconButton { icon: "queue"; tint: Theme.text-sub; clicked => { App.navigate("queue"); } }
+    }
+}
+
+component DetailHero inherits Rectangle {
+    in property <string> title: "";
+    in property <string> subtitle: "";
+    in property <string> icon: "album";
+    in property <color> accent: Theme.accent;
+    in property <image> art;
+    height: 176px; border-radius: 24px; clip: true;
+    background: @linear-gradient(145deg, accent 0%, #17131f 100%);
+    Cover { x: 18px; y: 20px; width: 136px; height: 136px; art: root.art; accent: root.accent; radius: 18px; icon-size: 42px; }
+    Rectangle { x: 170px; y: 34px; width: 70px; height: 5px; border-radius: 3px; background: #ffffff55; }
+    Text { x: 170px; y: 52px; width: parent.width - 190px; text: root.title; color: #ffffff; font-size: (22px * Theme.font-scale); font-weight: 800; wrap: word-wrap; max-lines: 2; }
+    Text { x: 170px; y: 118px; width: parent.width - 190px; text: root.subtitle; color: #ffffffb8; font-size: (11px * Theme.font-scale); wrap: word-wrap; max-lines: 2; }
+    Rectangle { x: 170px; y: 142px; width: 44px; height: 30px; border-radius: 15px; background: #ffffff22;
+        Icon { name: root.icon; tint: #ffffff; size: 16px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { App.play-page(); } }
+}
+
+
+component QuickTile inherits Rectangle {
+    in property <string> target: "liked";
+    in property <string> icon: "heart";
+    in property <string> title: "Liked songs";
+    in property <string> sub: "0 tracks";
+    in property <color> accent: Theme.accent;
+    height: 76px;
+    border-radius: 18px;
+    background: Theme.surface;
+    border-width: 1px;
+    border-color: Theme.line;
+    horizontal-stretch: 1;
+    HorizontalLayout {
+        padding-left: 10px; padding-right: 10px;
+        spacing: 10px;
+        Rectangle {
+            width: 40px; height: 40px; border-radius: 12px; background: root.accent;
+            Icon { name: root.icon; tint: #04140a; size: 21px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+        }
+        VerticalLayout {
+            horizontal-stretch: 1; spacing: 2px; alignment: center;
+            Text { text: root.title; color: Theme.text; font-size: (12.5px * Theme.font-scale); font-weight: 750; overflow: elide; }
+            Text { text: root.sub; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
+        }
+    }
+    TouchArea { width: 100%; height: 100%; clicked => { if (root.target == "queue") { App.navigate("queue"); } else { App.navigate(root.target); } } }
+}
+
+export component LibraryPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 68px; background: transparent;
+            HorizontalLayout {
+                padding-left: 20px; padding-right: 16px; spacing: 8px;
+                VerticalLayout { horizontal-stretch: 1; spacing: 2px;
+                    Text { text: "Your Library"; color: Theme.text; font-size: (27px * Theme.font-scale); font-weight: 800; }
+                    Text { text: App.liked-count + " liked · " + App.local-count + " local tracks"; color: Theme.text-sub; font-size: (11px * Theme.font-scale); }
+                }
+                IconButton { icon: "add"; tint: #04140a; box: 40px; fill: Theme.accent; clicked => { App.create-playlist(); } }
+            }
+        }
+
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 20px; padding-right: 20px; padding-bottom: 24px; spacing: 16px;
+
+                // Quick tiles — 2 × 2, full labels, equal heights
+                HorizontalLayout {
+                    spacing: 10px;
+                    QuickTile { target: "liked"; icon: "heart"; title: "Liked songs"; sub: App.liked-count + " tracks"; accent: Theme.accent; }
+                    QuickTile { target: "local"; icon: "folder"; title: "My files"; sub: App.local-count + " tracks"; accent: Theme.accent-2; }
+                }
+                HorizontalLayout {
+                    spacing: 10px;
+                    QuickTile { target: "history"; icon: "history"; title: "History"; sub: App.history.length + " recently"; accent: Theme.accent; }
+                    QuickTile { target: "queue"; icon: "queue"; title: "Queue"; sub: App.queue.length + " up next"; accent: Theme.accent-2; }
+                }
+
+                // Filters
+                ScrollView {
+                    min-width: 0px;
+                    width: 100%; height: 38px;
+                    HorizontalLayout {
+                        spacing: 8px;
+                        for f in ["all", "playlists", "albums", "artists", "downloads"] : Chip {
+                            text: f;
+                            selected: App.library-filter == f;
+                            clicked => { App.library-filter = f; }
+                        }
+                    }
+                }
+
+                if App.playlists.length == 0 && App.liked-count == 0 && App.local-count == 0 : Rectangle {
+                    height: 152px; border-radius: 20px; background: Theme.surface; border-width: 1px; border-color: Theme.line;
+                    VerticalLayout {
+                        padding: 18px; spacing: 10px; alignment: center;
+                        Text { text: "Bring your music"; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 750; horizontal-alignment: center; }
+                        Text { text: "Scan files on this device or import a playlist from YouTube, SoundCloud or Spotify."; color: Theme.text-sub; font-size: (11px * Theme.font-scale); horizontal-alignment: center; wrap: word-wrap; }
+                        HorizontalLayout {
+                            alignment: center; spacing: 10px;
+                            TextButton { text: "Scan files"; primary: true; compact: true; clicked => { App.scan-library(); } }
+                            TextButton { text: "Import link"; compact: true; clicked => { App.navigate("import"); } }
+                        }
+                    }
+                }
+
+                if App.library-filter == "all" || App.library-filter == "playlists" : VerticalLayout {
+                    spacing: 8px;
+                    SectionTitle { title: "Playlists"; action: "Import"; show-action: true; }
+                    if App.playlists.length == 0 : EmptyCard {
+                        icon: "album"; title: "No playlists yet";
+                        subtitle: "Create a playlist or import one from YouTube, SoundCloud or Spotify.";
+                    }
+                    for p in App.playlists : Rectangle {
+                        height: 66px; border-radius: 14px; background: Theme.surface;
+                        HorizontalLayout {
+                            padding: 8px; spacing: 10px; 
+                            Cover { art: p.art; accent: p.accent; width: 50px; height: 50px; radius: 11px; icon-size: 19px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 2px; 
+                                Text { text: p.name; color: Theme.text; font-size: (13.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                                Text { text: p.subtitle; color: Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
+                            }
+                            Text { text: p.count + ""; color: Theme.text-faint; font-size: (11px * Theme.font-scale); vertical-alignment: center; }
+                            Icon { name: "more-horizontal"; tint: Theme.text-faint; size: 19px; }
+                        }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.open-playlist(p.id); } }
+                    }
+                }
+
+                if App.library-filter == "albums" || (App.library-filter == "all" && App.albums.length > 0) : VerticalLayout {
+                    spacing: 8px;
+                    SectionTitle { title: "Albums"; action: ""; show-action: false; }
+                    if App.albums.length == 0 : EmptyCard {
+                        icon: "album"; title: "No albums yet";
+                        subtitle: "Albums are created automatically from your liked and local music.";
+                    }
+                    ScrollView {
+                        min-width: 0px;
+                        width: 100%; height: 192px;
+                        HorizontalLayout {
+                            spacing: 12px;
+                            for a in App.albums : Rectangle {
+                                width: 128px; height: 188px; background: transparent;
+                                VerticalLayout { spacing: 6px;
+                                    Cover { art: a.art; accent: a.accent; width: 128px; height: 128px; radius: 16px; icon-size: 30px; }
+                                    Text { text: a.name; color: Theme.text; font-size: (12.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                                    Text { text: a.subtitle; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
+                                }
+                                TouchArea { width: 100%; height: 100%; clicked => { App.open-album(a.name); } }
+                            }
+                        }
+                    }
+                }
+
+                if App.library-filter == "artists" || (App.library-filter == "all" && App.library-tracks.length > 0) : VerticalLayout {
+                    spacing: 8px;
+                    SectionTitle { title: "Artists"; action: ""; show-action: false; }
+                    for t in App.library-tracks : Rectangle {
+                        height: 56px; border-radius: 28px; background: Theme.surface;
+                        HorizontalLayout {
+                            padding-left: 8px; padding-right: 12px; spacing: 10px; 
+                            Rectangle { width: 40px; height: 40px; border-radius: 20px; background: Theme.accent;
+                                Icon { name: "person"; tint: #04140a; size: 20px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                            }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 1px; 
+                                Text { text: t.artist; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                                Text { text: "Artist"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            }
+                            Icon { name: "play"; tint: Theme.accent; size: 18px; }
+                        }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.open-artist(t.artist); } }
+                    }
+                    if App.library-tracks.length == 0 : EmptyCard { icon: "person"; title: "No artists yet"; subtitle: "Scan your local files or like some tracks."; }
+                }
+
+                if App.library-filter == "downloads" : VerticalLayout {
+                    spacing: 8px;
+                    SectionTitle { title: "Downloaded & cached"; action: ""; show-action: false; }
+                    for t in App.library-tracks : TrackRow { item: t; }
+                }
+
+                Rectangle { height: 8px; }
+            }
+        }
+    }
+}
+
+export component TrackListPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    in property <string> heading: "Tracks";
+    in property <string> subheading: "";
+    in property <string> icon: "lyrics";
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        DetailTopBar { title: root.heading; }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px;
+                spacing: 12px;
+                DetailHero { title: root.heading; subtitle: root.subheading; icon: root.icon; accent: App.page-accent; art: App.page-art; }
+                if App.detail-tracks.length == 0 : EmptyCard { icon: root.icon; title: "Nothing here yet"; subtitle: "Play some music or scan your local library."; }
+                for t in App.detail-tracks : TrackRow { item: t; }
+            }
+        }
+    }
+}
+
+export component AlbumPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        DetailTopBar { title: App.page-title; }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px; spacing: 12px;
+                DetailHero { title: App.page-title; subtitle: App.page-subtitle; icon: "album"; accent: App.page-accent; art: App.page-art; }
+                for t in App.detail-tracks : TrackRow { item: t; }
+                if App.detail-tracks.length == 0 : EmptyCard { icon: "album"; title: "No tracks in this album"; subtitle: "Tracks from this release will appear here."; }
+            }
+        }
+    }
+}
+
+export component ArtistPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        DetailTopBar { title: App.page-title; }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px; spacing: 12px;
+                Rectangle {
+                    height: 190px; border-radius: 24px; clip: true;
+                    background: @linear-gradient(150deg, App.page-accent 0%, #17131f 100%);
+                    VerticalLayout { alignment: center; spacing: 8px;
+                        Rectangle { width: 84px; height: 84px; border-radius: 42px; background: #ffffff20;
+                            Icon { name: "person"; tint: #ffffff; size: 42px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                        }
+                        Text { text: App.page-title; color: #ffffff; font-size: (24px * Theme.font-scale); font-weight: 800;  }
+                        Text { text: App.page-subtitle; color: #ffffffb8; font-size: (11px * Theme.font-scale);  }
+                    }
+                }
+                HorizontalLayout { spacing: 10px; alignment: center;
+                    TextButton { text: "Play"; primary: true; clicked => { App.play-page(); } }
+                    TextButton { text: "Shuffle"; clicked => { App.shuffle-page(); } }
+                }
+                SectionTitle { title: "Popular tracks"; action: ""; show-action: false; }
+                for t in App.detail-tracks : TrackRow { item: t; }
+                if App.detail-tracks.length == 0 : EmptyCard { icon: "person"; title: "No tracks found"; subtitle: "Like tracks from this artist to see them here."; }
+            }
+        }
+    }
+}
+
+export component PlaylistPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        DetailTopBar { title: App.page-title; }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px; spacing: 12px;
+                DetailHero { title: App.page-title; subtitle: App.page-subtitle; icon: "album"; accent: App.page-accent; art: App.page-art; }
+                HorizontalLayout { spacing: 10px; alignment: center;
+                    TextButton { text: "Play all"; primary: true; clicked => { App.play-page(); } }
+                    TextButton { text: "Shuffle"; clicked => { App.shuffle-page(); } }
+                    IconButton { icon: "add"; tint: Theme.text; fill: Theme.surface-2; clicked => { App.navigate("search"); } }
+                }
+                if App.detail-tracks.length == 0 : EmptyCard { icon: "album"; title: "Playlist is empty"; subtitle: "Find tracks in Search and add them to this playlist."; }
+                for t in App.detail-tracks : TrackRow { item: t; }
+            }
+        }
+    }
+}
+
+export component QueuePage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    VerticalLayout {
+        spacing: 0;
+        DetailTopBar { title: "Queue"; }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 18px; padding-right: 18px; padding-bottom: 20px; spacing: 6px;
+                HorizontalLayout { spacing: 10px; alignment: center;
+                    Text { text: App.queue.length + " tracks"; color: Theme.text-sub; font-size: (12px * Theme.font-scale); horizontal-stretch: 1; vertical-alignment: center; }
+                    TextButton { text: "Clear"; compact: true; clicked => { App.clear-queue(); } }
+                }
+                if App.queue.length == 0 : EmptyCard { icon: "queue"; title: "Your queue is empty"; subtitle: "Add tracks from anywhere to build your up-next list."; }
+                for t in App.queue : Rectangle {
+                    height: 66px; border-radius: 14px;
+                    background: App.current.id == t.id ? Theme.surface-2 : transparent;
+                    HorizontalLayout {
+                        padding-left: 8px; padding-right: 4px; spacing: 8px; 
+                        Cover { art: t.art; accent: t.accent; width: 46px; height: 46px; radius: 10px; icon-size: 18px; }
+                        VerticalLayout { horizontal-stretch: 1; spacing: 1px; 
+                            Text { text: t.title; color: App.current.id == t.id ? Theme.accent : Theme.text; font-size: (13px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                            Text { text: t.artist; color: Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
+                        }
+                        IconButton { icon: "close"; tint: Theme.text-faint; icon-size: 16px; box: 30px; clicked => { App.remove-queue-id(t.id); } }
+                    }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.play-queue-id(t.id); } }
+                }
+            }
+        }
+    }
+}

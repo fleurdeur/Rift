@@ -1,0 +1,212 @@
+import { Theme } from "theme.slint";
+
+export struct TrackItem {
+    id: string,
+    title: string,
+    artist: string,
+    album: string,
+    duration: int,
+    duration-label: string,
+    art: image,
+    accent: color,
+    liked: bool,
+    source: string,
+    subtitle: string,
+}
+
+export struct PlaylistItem {
+    id: string,
+    name: string,
+    subtitle: string,
+    art: image,
+    accent: color,
+    count: int,
+}
+
+export struct AlbumItem {
+    id: string,
+    name: string,
+    subtitle: string,
+    art: image,
+    accent: color,
+    count: int,
+}
+
+export struct LyricLine {
+    time: int,
+    text: string,
+    active: bool,
+}
+
+export global App {
+    // Navigation
+    in-out property <string> view: "home";
+    in-out property <string> previous-view: "home";
+    in-out property <string> page-title: "";
+    in-out property <string> page-subtitle: "";
+    in-out property <string> page-id: "";
+    in-out property <color> page-accent: Theme.accent;
+    in-out property <image> page-art;
+
+    // Data
+    in-out property <[TrackItem]> home-recent;
+    in-out property <[TrackItem]> home-made;
+    in-out property <[TrackItem]> home-trending;
+    in-out property <[TrackItem]> home-quick;
+    in-out property <[TrackItem]> search-results;
+    in-out property <[TrackItem]> library-tracks;
+    in-out property <[TrackItem]> liked-tracks;
+    in-out property <[TrackItem]> detail-tracks;
+    in-out property <[TrackItem]> queue;
+    in-out property <[TrackItem]> history;
+    in-out property <[AlbumItem]> albums;
+    in-out property <[PlaylistItem]> playlists;
+    in-out property <[string]> search-history;
+    in-out property <[string]> genres;
+    in-out property <[LyricLine]> lyrics;
+    in-out property <[float]> eq-gains: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    in-out property <[string]> eq-presets;
+    in-out property <int> eq-preset: 0;
+
+    // Player
+    in-out property <TrackItem> current;
+    in-out property <bool> playing: false;
+    in-out property <bool> loading: false;
+    in-out property <bool> current-liked: false;
+    in-out property <int> position: 0;
+    in-out property <int> duration: 0;
+    in-out property <string> position-label: "0:00";
+    in-out property <string> duration-label: "0:00";
+    in-out property <string> sleep-label: "";
+    in-out property <float> volume: 0.8;
+    in-out property <bool> shuffle: false;
+    in-out property <int> repeat: 0;
+    in-out property <float> speed: 1.0;
+    in-out property <float> pitch: 0.0;
+    in-out property <float> bass-boost: 0.0;
+    in-out property <float> reverb: 0.0;
+    in-out property <bool> normalizer: false;
+    in-out property <bool> compressor: false;
+    in-out property <float> comp-threshold: -18;
+    in-out property <float> comp-ratio: 3;
+    in-out property <float> comp-attack: 12;
+    in-out property <float> comp-release: 120;
+    in-out property <float> comp-makeup: 2;
+    in-out property <bool> limiter: true;
+    in-out property <float> limiter-ceiling: -1;
+    in-out property <[string]> eq-profiles;
+    in-out property <bool> visualizer-on: true;
+    in-out property <[float]> spectrum;
+    in-out property <int> sleep-minutes: 0;
+    in-out property <int> sleep-remaining: 0;
+    in-out property <bool> show-lyrics: false;
+    in-out property <int> lyrics-offset: 0;
+    in-out property <string> audio-quality: "High";
+    in-out property <string> download-quality: "Best";
+    in-out property <string> spotify-client-id: "";
+    in-out property <string> spotify-client-secret: "";
+    in-out property <bool> spotify-connected: false;
+    in-out property <string> spotify-status: "Not connected";
+
+    // UI state
+    in-out property <string> search-query: "";
+    in-out property <bool> search-loading: false;
+    in-out property <string> search-source: "All";
+    in-out property <string> toast: "";
+    in-out property <bool> toast-visible: false;
+    in-out property <bool> loading-home: false;
+    in-out property <bool> offline: false;
+    in-out property <string> account-name: "Listener";
+    in-out property <string> account-sub: "Local profile";
+    in-out property <string> library-filter: "all";
+    in-out property <string> import-url: "";
+    in-out property <string> import-status: "";
+    in-out property <bool> import-busy: false;
+    in-out property <int> import-progress: 0;
+    in-out property <string> import-source: "YouTube";
+    in-out property <[string]> import-sources;
+    in-out property <bool> scan-busy: false;
+    in-out property <string> cache-size: "0 MB";
+    in-out property <int> liked-count: 0;
+    in-out property <int> local-count: 0;
+    in-out property <int> queue-index: -1;
+    in-out property <bool> app-ready: false;
+
+    // Theme
+    in-out property <bool> theme-light: false;
+    in-out property <bool> dynamic-color: true;
+    in-out property <int> accent-index: 0;
+    in-out property <float> font-scale: 1.0;
+    in-out property <[color]> accents: [
+        #1db954, #1ed760, #8b7bff, #ff6b9d, #ff8a5c, #ffd166, #48d597,
+        #4fd1c5, #54a9ff, #b47cff
+    ];
+
+    // Actions
+    callback navigate(string);
+    callback go-back();
+    callback play-id(string);
+    callback play-page();
+    callback shuffle-page();
+    callback toggle-play();
+    callback next-track();
+    callback previous-track();
+    callback seek(int);
+    callback set-volume(float);
+    callback toggle-like(string);
+    callback queue-add(string);
+    callback play-queue-id(string);
+    callback remove-queue-id(string);
+    callback clear-queue();
+    callback search(string);
+    callback set-search-source(string);
+    callback open-playlist(string);
+    callback open-album(string);
+    callback open-artist(string);
+    callback create-playlist();
+    callback delete-playlist(string);
+    callback add-to-playlist(string);
+    callback scan-library();
+    callback import-playlist();
+    callback set-import-url(string);
+    callback set-import-source(string);
+    callback set-eq(int, float);
+    callback apply-preset(int);
+    callback set-speed(float);
+    callback set-pitch(float);
+    callback set-bass(float);
+    callback set-reverb(float);
+    callback toggle-normalizer();
+    callback set-compressor(bool);
+    callback set-comp-threshold(float);
+    callback set-comp-ratio(float);
+    callback set-comp-attack(float);
+    callback set-comp-release(float);
+    callback set-comp-makeup(float);
+    callback set-limiter(bool);
+    callback set-limiter-ceiling(float);
+    callback save-profile();
+    callback apply-profile(int);
+    callback set-spotify-client-id(string);
+    callback set-spotify-client-secret(string);
+    callback connect-spotify();
+    callback set-sleep(int);
+    callback set-quality(string);
+    callback toggle-shuffle();
+    callback cycle-repeat();
+    callback refresh-home();
+    callback clear-cache();
+    callback set-theme-light(bool);
+    callback set-dynamic(bool);
+    callback set-accent(int);
+    callback set-font-scale(float);
+    callback set-account-name(string);
+    callback open-lyrics();
+    callback load-lyrics();
+    callback seek-lyric(int);
+    callback nudge-lyrics(int);
+    callback fetch-related(string);
+    callback toast-message(string);
+    callback save-settings();
+    callback open-url(string);
+}

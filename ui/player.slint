@@ -1,0 +1,207 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App } from "state.slint";
+import { IconButton, ProgressSlider, Cover, TextButton, Chip } from "widgets.slint";
+
+component VolumeSlider inherits Rectangle {
+    in property <float> value: 0.8;
+    height: 26px;
+    horizontal-stretch: 1;
+    background: transparent;
+    Rectangle { width: 100%; height: 4px; border-radius: 2px; background: Theme.surface-3; y: (parent.height - self.height) / 2; }
+    Rectangle { width: parent.width * value; height: 4px; border-radius: 2px; background: Theme.accent; y: (parent.height - self.height) / 2; }
+    Rectangle { x: Math.max(0, parent.width * value - 5px); y: (parent.height - 10px) / 2; width: 10px; height: 10px; border-radius: 5px; background: #ffffff; }
+    TouchArea {
+        width: 100%; height: 100%;
+        clicked => { App.set-volume(Math.max(0, Math.min(1, self.mouse-x / self.width))); }
+        moved => { if (self.pressed) { App.set-volume(Math.max(0, Math.min(1, self.mouse-x / self.width))); } }
+    }
+}
+
+
+export component PlayerPage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    property <bool> lyrics-mode: App.view == "lyrics";
+
+    Rectangle {
+        background: @linear-gradient(160deg, App.current.accent 0%, #0b0b0e 58%, #0b0b0e 100%);
+        width: 100%; height: 100%;
+    }
+    Rectangle { x: -60px; y: -80px; width: 320px; height: 320px; border-radius: 160px; background: App.current.accent; opacity: 0.18; }
+    Rectangle { x: parent.width - 150px; y: 160px; width: 220px; height: 220px; border-radius: 110px; background: Theme.accent-2; opacity: 0.08; }
+
+    VerticalLayout {
+        spacing: 0;
+
+        Rectangle {
+            height: 62px; background: transparent;
+            HorizontalLayout {
+                padding-left: 12px; padding-right: 12px; spacing: 6px;
+                IconButton { icon: "back"; tint: Theme.text; box: 42px; fill: Theme.surface; clicked => { App.navigate("home"); } }
+                VerticalLayout { horizontal-stretch: 1; alignment: center; spacing: 1px;
+                    Text { text: root.lyrics-mode ? "LYRICS" : "NOW PLAYING"; color: Theme.text; font-size: (11px * Theme.font-scale); font-weight: 800; letter-spacing: 1.8px; horizontal-alignment: center; }
+                    Text { text: App.current.source; color: Theme.accent; font-size: (9px * Theme.font-scale); font-weight: 700; letter-spacing: 0.8px; horizontal-alignment: center; }
+                }
+                IconButton { icon: root.lyrics-mode ? "album" : "lyrics"; tint: root.lyrics-mode ? #04140a : Theme.text; active: root.lyrics-mode; box: 42px; clicked => { if (root.lyrics-mode) { App.navigate("now-playing"); } else { App.open-lyrics(); } } }
+                IconButton { icon: "queue"; tint: Theme.text; box: 42px; fill: Theme.surface; clicked => { App.navigate("queue"); } }
+            }
+        }
+
+        if root.lyrics-mode == false : ScrollView {
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 24px; padding-right: 24px; padding-top: 4px; padding-bottom: 14px;
+                spacing: 12px;
+
+                Rectangle {
+                    height: Math.min(parent.width - 48px, 340px);
+                    border-radius: 26px;
+                    background: App.current.accent;
+                    clip: true;
+                    border-width: 1px; border-color: #ffffff1a;
+                    Cover { width: 100%; height: 100%; art: App.current.art; accent: App.current.accent; radius: 26px; icon-size: 64px; }
+                    Rectangle { x: 0px; y: 0px; width: 100%; height: 45%; background: #ffffff0c; }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    VerticalLayout {
+                        horizontal-stretch: 1; spacing: 2px;
+                        Text { text: App.current.title; color: Theme.text; font-size: (21px * Theme.font-scale); font-weight: 800; overflow: elide; }
+                        Text { text: App.current.artist; color: Theme.text-sub; font-size: (13px * Theme.font-scale); overflow: elide; }
+                    }
+                    IconButton {
+                        icon: App.current-liked ? "heart" : "heart-outline";
+                        tint: App.current-liked ? Theme.accent : Theme.text;
+                        box: 44px; icon-size: 24px;
+                        clicked => { App.toggle-like(App.current.id); }
+                    }
+                }
+
+                VerticalLayout { spacing: 0px;
+                    ProgressSlider { position: App.position; duration: App.duration; }
+                    HorizontalLayout {
+                        Text { text: App.position-label; color: Theme.text-faint; font-size: (10.5px * Theme.font-scale); horizontal-stretch: 1; }
+                        Text { text: App.duration-label; color: Theme.text-faint; font-size: (10.5px * Theme.font-scale); }
+                    }
+                }
+
+                if App.visualizer-on && App.spectrum.length > 0 : Rectangle {
+                    height: 48px; background: transparent;
+                    HorizontalLayout {
+                        alignment: space-between;
+                        for v in App.spectrum : Rectangle {
+                            width: 4px; border-radius: 2px;
+                            height: Math.max(3px, v * 46px);
+                            background: @linear-gradient(0deg, Theme.accent 0%, Theme.accent-2 100%);
+                            y: parent.height - self.height;
+                        }
+                    }
+                }
+
+                HorizontalLayout {
+                    alignment: space-between;
+                    IconButton { icon: "shuffle"; tint: App.shuffle ? Theme.accent : Theme.text-sub; clicked => { App.toggle-shuffle(); } }
+                    IconButton { icon: "prev"; tint: Theme.text; icon-size: 28px; box: 48px; clicked => { App.previous-track(); } }
+                    Rectangle {
+                        width: 68px; height: 68px; border-radius: 34px;
+                        background: Theme.accent;
+                        Icon { name: App.loading ? "timer" : (App.playing ? "pause" : "play"); tint: #ffffff; size: 32px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.toggle-play(); } }
+                    }
+                    IconButton { icon: "next"; tint: Theme.text; icon-size: 28px; box: 48px; clicked => { App.next-track(); } }
+                    IconButton { icon: App.repeat == 2 ? "repeat-one" : "repeat"; tint: App.repeat > 0 ? Theme.accent : Theme.text-sub; clicked => { App.cycle-repeat(); } }
+                }
+
+                HorizontalLayout {
+                    alignment: space-around;
+                    IconButton { icon: "lyrics"; tint: Theme.text-sub; clicked => { App.open-lyrics(); } }
+                    IconButton { icon: "eq"; tint: Theme.text-sub; clicked => { App.navigate("eq"); } }
+                    IconButton { icon: "timer"; tint: App.sleep-minutes > 0 ? Theme.accent : Theme.text-sub; clicked => { App.navigate("sleep"); } }
+                    IconButton { icon: "queue"; tint: Theme.text-sub; clicked => { App.navigate("queue"); } }
+                    IconButton { icon: "sparkle"; tint: App.visualizer-on ? Theme.accent : Theme.text-sub; clicked => { App.visualizer-on = !App.visualizer-on; App.save-settings(); } }
+                }
+
+                HorizontalLayout {
+                    spacing: 10px;
+                    Icon { name: "volume"; tint: Theme.text-faint; size: 18px; }
+                    VolumeSlider { value: App.volume; }
+                    Text { text: Math.round(App.volume * 100) + "%"; color: Theme.text-faint; font-size: (10px * Theme.font-scale); width: 32px; horizontal-alignment: end; }
+                }
+
+                if App.sleep-minutes > 0 : Rectangle {
+                    height: 34px; border-radius: 17px; background: Theme.surface-2;
+                    HorizontalLayout { padding-left: 12px; padding-right: 12px; spacing: 8px;
+                        Icon { name: "timer"; tint: Theme.accent; size: 15px; }
+                        Text { text: "Sleep timer · " + App.sleep-label; color: Theme.text-sub; font-size: (11px * Theme.font-scale); horizontal-stretch: 1; vertical-alignment: center; }
+                        Text { text: "Off"; color: Theme.accent; font-size: (11px * Theme.font-scale); font-weight: 700; vertical-alignment: center; }
+                    }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.set-sleep(0); } }
+                }
+
+                Rectangle { height: 6px; }
+            }
+        }
+
+        if root.lyrics-mode : VerticalLayout {
+            padding-left: 24px; padding-right: 24px; padding-bottom: 20px;
+            spacing: 10px;
+
+            VerticalLayout {
+                spacing: 2px;
+                Text { text: App.current.title; color: Theme.text; font-size: (19px * Theme.font-scale); font-weight: 800; overflow: elide; }
+                Text { text: App.current.artist; color: Theme.text-sub; font-size: (12px * Theme.font-scale); overflow: elide; }
+            }
+
+            HorizontalLayout {
+                spacing: 8px; alignment: center;
+                Chip { text: "−0.5s"; clicked => { App.nudge-lyrics(-500); } }
+                Chip { text: "Lyrics"; selected: true; clicked => { } }
+                Chip { text: "+0.5s"; clicked => { App.nudge-lyrics(500); } }
+                Text { text: App.lyrics.length + " lines"; color: Theme.text-faint; font-size: (10px * Theme.font-scale); horizontal-stretch: 1; horizontal-alignment: end; vertical-alignment: center; }
+            }
+
+            if App.lyrics.length == 0 : VerticalLayout {
+                horizontal-stretch: 1;
+                alignment: center;
+                spacing: 10px;
+                Icon { name: "lyrics"; tint: Theme.accent; size: 36px; }
+                Text { text: "No synced lyrics"; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 700; horizontal-alignment: center; }
+                Text { text: "Rift looks up timed lyrics from LRCLIB. Tap below to search again or play a track with a local .lrc file."; color: Theme.text-sub; font-size: (12px * Theme.font-scale); horizontal-alignment: center; wrap: word-wrap; }
+                TextButton { text: "Find lyrics"; primary: true; clicked => { App.load-lyrics(); } }
+            }
+
+            if App.lyrics.length > 0 : ScrollView {
+                width: 100%; vertical-stretch: 1;
+                VerticalLayout {
+                    padding-top: 12px; padding-bottom: 30px;
+                    spacing: 6px;
+                    for line in App.lyrics : Rectangle {
+                        height: Math.max(34px, line.active ? 52px : 40px);
+                        background: transparent;
+                        Text {
+                            text: line.text;
+                            color: line.active ? Theme.accent : Theme.text-sub;
+                            font-size: line.active ? (22px * Theme.font-scale) : (17px * Theme.font-scale);
+                            font-weight: line.active ? 800 : 600;
+                            wrap: word-wrap;
+                            vertical-alignment: center;
+                            animate color { duration: 220ms; }
+                        }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.seek-lyric(line.time); } }
+                    }
+                }
+            }
+
+            HorizontalLayout {
+                alignment: space-between;
+                Text { text: App.position-label; color: Theme.text-faint; font-size: (10px * Theme.font-scale); }
+                IconButton { icon: App.playing ? "pause" : "play"; tint: Theme.text; clicked => { App.toggle-play(); } }
+                Text { text: App.duration-label; color: Theme.text-faint; font-size: (10px * Theme.font-scale); }
+            }
+        }
+    }
+}

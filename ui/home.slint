@@ -1,0 +1,219 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App, TrackItem } from "state.slint";
+import { SectionTitle, TrackCard, TrackRow, Cover, PlayBadge, Chip, TextButton, EmptyState } from "widgets.slint";
+
+export component HomePage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+
+    VerticalLayout {
+        spacing: 0;
+
+        // Top bar
+        Rectangle {
+            height: 66px;
+            background: transparent;
+            HorizontalLayout {
+                padding-left: 20px;
+                padding-right: 20px;
+                spacing: 12px;
+                VerticalLayout {
+                    horizontal-stretch: 1;
+                    spacing: 2px;
+                    Text { text: "RIFT"; color: Theme.accent; font-size: (10.5px * Theme.font-scale); font-weight: 800; letter-spacing: 3px; }
+                    Text { text: "Good listening"; color: Theme.text; font-size: (17px * Theme.font-scale); font-weight: 750; }
+                }
+                Rectangle {
+                    width: 42px; height: 42px; border-radius: 21px;
+                    background: @linear-gradient(135deg, Theme.accent 0%, Theme.accent-2 100%);
+                    Icon { name: "person"; tint: #04140a; size: 22px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.navigate("settings"); } }
+                }
+            }
+        }
+
+        ScrollView {
+            min-width: 0px;
+            width: 100%;
+            vertical-stretch: 1;
+
+            VerticalLayout {
+                min-width: 0px;
+                width: 100%;
+                padding-left: 20px;
+                padding-right: 20px;
+                padding-bottom: 24px;
+                spacing: 18px;
+
+                // Search shortcut
+                Rectangle {
+                    height: 48px;
+                    border-radius: 24px;
+                    background: Theme.surface;
+                    border-width: 1px;
+                    border-color: Theme.line;
+                    HorizontalLayout {
+                        padding-left: 16px; padding-right: 16px;
+                        spacing: 11px;
+                        Icon { name: "search"; tint: Theme.text-faint; size: 20px; }
+                        Text { text: "Artists, songs, albums…"; color: Theme.text-faint; font-size: (13px * Theme.font-scale); vertical-alignment: center; horizontal-stretch: 1; }
+                        Rectangle {
+                            width: 30px; height: 30px; border-radius: 15px;
+                            background: Theme.surface-2;
+                            Icon { name: "sparkle"; tint: Theme.accent; size: 17px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                        }
+                    }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.navigate("search"); } }
+                }
+
+                // Hero
+                Rectangle {
+                    height: 214px;
+                    border-radius: 26px;
+                    clip: true;
+                    background: @linear-gradient(130deg, #25e36b 0%, #0d8f45 46%, #062a18 100%);
+                    Rectangle {
+                        x: parent.width - 150px; y: -34px;
+                        width: 218px; height: 218px; border-radius: 109px;
+                        background: #ffffff0d;
+                    }
+                    Rectangle {
+                        x: parent.width - 132px; y: -16px;
+                        width: 182px; height: 182px; border-radius: 91px;
+                        background: #06150c80;
+                        border-width: 1px; border-color: #ffffff20;
+                    }
+                    Rectangle {
+                        x: parent.width - 106px; y: 10px;
+                        width: 130px; height: 130px; border-radius: 65px;
+                        background: #07130c9e;
+                        border-width: 1px; border-color: #ffffff24;
+                        Icon { name: "album"; tint: #dfffee; size: 46px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                    }
+                    VerticalLayout {
+                        padding-left: 22px; padding-right: 22px; padding-top: 22px; padding-bottom: 20px;
+                        spacing: 6px;
+                        Text { text: "MADE FOR YOU"; color: #d7ffe4; font-size: (10px * Theme.font-scale); font-weight: 800; letter-spacing: 2.4px; }
+                        Text { text: "Your daily\nriff mix"; color: #ffffff; font-size: (29px * Theme.font-scale); font-weight: 800; }
+                        Text { text: "Fresh picks across YouTube & SoundCloud"; color: #d7ffe4cc; font-size: (11.5px * Theme.font-scale); }
+                        Rectangle { height: 5px; }
+                        Rectangle {
+                            height: 38px; width: 132px; border-radius: 19px;
+                            background: #ffffff;
+                            HorizontalLayout {
+                                alignment: center;
+                                spacing: 8px;
+                                Icon { name: "play"; tint: #062a18; size: 18px; }
+                                Text { text: "Play mix"; color: #062a18; font-size: (12.5px * Theme.font-scale); font-weight: 800; vertical-alignment: center; }
+                            }
+                            TouchArea { width: 100%; height: 100%; clicked => { App.play-page(); } }
+                        }
+                    }
+                }
+
+                // Quick chips
+                ScrollView {
+                    min-width: 0px;
+                    height: 34px;
+                    width: 100%;
+                    HorizontalLayout {
+                        min-width: 0px;
+                        spacing: 9px;
+                        padding-right: 20px;
+                        for g in App.genres : Chip {
+                            text: g;
+                            selected: false;
+                            clicked => { App.navigate("search"); App.search(g); }
+                        }
+                    }
+                }
+
+                // Recently played
+                if App.home-recent.length > 0 : VerticalLayout {
+                    spacing: 10px;
+                    SectionTitle { title: "Recently played"; action: "History"; show-action: true; }
+                    ScrollView {
+                        min-width: 0px;
+                        height: 214px;
+                        width: 100%;
+                        HorizontalLayout {
+                            min-width: 0px;
+                            spacing: 14px;
+                            padding-right: 20px;
+                            for t in App.home-recent : TrackCard { item: t; }
+                        }
+                    }
+                    TouchArea { width: 100%; height: 100%; clicked => { App.navigate("history"); } }
+                }
+
+                // Made for you
+                if App.home-made.length > 0 : VerticalLayout {
+                    spacing: 10px;
+                    SectionTitle { title: "Made for you"; action: "Refresh"; show-action: true; }
+                    ScrollView {
+                        min-width: 0px;
+                        height: 214px;
+                        width: 100%;
+                        HorizontalLayout {
+                            min-width: 0px;
+                            spacing: 14px;
+                            padding-right: 20px;
+                            for t in App.home-made : TrackCard { item: t; }
+                        }
+                    }
+                }
+
+                // Trending
+                if App.home-trending.length > 0 : VerticalLayout {
+                    spacing: 6px;
+                    SectionTitle { title: "Trending now"; action: "Search"; show-action: true; }
+                    for t in App.home-trending : TrackRow { item: t; }
+                }
+
+                // Quick picks
+                if App.home-quick.length > 0 : VerticalLayout {
+                    spacing: 8px;
+                    SectionTitle { title: "Quick picks"; action: "Shuffle"; show-action: true; }
+                    GridLayout {
+                        spacing: 8px;
+                        for t in App.home-quick : Rectangle {
+                            height: 58px; border-radius: 14px; background: Theme.surface;
+                            HorizontalLayout {
+                                padding: 6px; spacing: 9px; 
+                                Cover { art: t.art; accent: t.accent; width: 44px; height: 44px; radius: 9px; icon-size: 17px; }
+                                VerticalLayout {
+                                    horizontal-stretch: 1; spacing: 1px; 
+                                    Text { text: t.title; color: Theme.text; font-size: (12px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                                    Text { text: t.artist; color: Theme.text-sub; font-size: (10px * Theme.font-scale); overflow: elide; }
+                                }
+                            }
+                            TouchArea { width: 100%; height: 100%; clicked => { App.play-id(t.id); } }
+                        }
+                    }
+                }
+
+                if App.loading-home : VerticalLayout {
+                    height: 90px;
+                    alignment: center;
+                    spacing: 8px;
+                    Text { text: "Tuning the radio…"; color: Theme.text-sub; font-size: (12px * Theme.font-scale);  }
+                }
+
+                if App.home-recent.length == 0 && App.home-trending.length == 0 && !App.loading-home : EmptyState {
+                    icon: "wifi-off";
+                    title: "Nothing loaded yet";
+                    subtitle: "Connect to the internet for YouTube and SoundCloud discovery, or scan your local library.";
+                    Rectangle { height: 4px; }
+                }
+
+                Rectangle { height: 6px; }
+            }
+        }
+    }
+
+    // Section title taps: search / history are handled by bottom nav and page taps
+    TouchArea { width: 0px; height: 0px; }
+}
