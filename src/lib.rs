@@ -3,6 +3,7 @@
 
 pub mod android;
 pub mod app;
+pub mod audio_presets;
 pub mod images;
 pub mod library;
 pub mod lyrics;
@@ -10,6 +11,7 @@ pub mod model;
 pub mod paths;
 pub mod player;
 pub mod sources;
+pub mod themes;
 
 slint::include_modules!();
 

@@ -2,16 +2,16 @@ import { Theme } from "theme.slint";
 import { ScrollView } from "std-widgets.slint";
 import { Icon } from "icons.slint";
 import { App } from "state.slint";
-import { SectionTitle, TrackRow, TrackCard, Cover, Chip, TextButton, EmptyState, EmptyCard, IconButton, PlayBadge } from "widgets.slint";
+import { SectionTitle, TrackRow, TrackCard, Cover, Chip, TextButton, EmptyCard, IconButton, QuickTile } from "widgets.slint";
 
 component DetailTopBar inherits Rectangle {
     in property <string> title: "";
-    height: 54px; background: transparent;
+    height: 56px; background: Theme.bg;
     HorizontalLayout {
-        padding-left: 10px; padding-right: 16px; spacing: 8px; 
+        padding-left: 8px; padding-right: 12px; spacing: 6px;
         IconButton { icon: "back"; tint: Theme.text; clicked => { App.go-back(); } }
-        Text { text: root.title; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 700; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; }
-        IconButton { icon: "queue"; tint: Theme.text-sub; clicked => { App.navigate("queue"); } }
+        Text { text: root.title; color: Theme.text; font-size: (18px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; overflow: elide; vertical-alignment: center; }
+        IconButton { icon: "queue"; tint: Theme.text; clicked => { App.navigate("queue"); } }
     }
 }
 
@@ -21,62 +21,29 @@ component DetailHero inherits Rectangle {
     in property <string> icon: "album";
     in property <color> accent: Theme.accent;
     in property <image> art;
-    height: 176px; border-radius: 24px; clip: true;
-    background: @linear-gradient(145deg, accent 0%, #17131f 100%);
-    Cover { x: 18px; y: 20px; width: 136px; height: 136px; art: root.art; accent: root.accent; radius: 18px; icon-size: 42px; }
-    Rectangle { x: 170px; y: 34px; width: 70px; height: 5px; border-radius: 3px; background: #ffffff55; }
-    Text { x: 170px; y: 52px; width: parent.width - 190px; text: root.title; color: #ffffff; font-size: (22px * Theme.font-scale); font-weight: 800; wrap: word-wrap; max-lines: 2; }
-    Text { x: 170px; y: 118px; width: parent.width - 190px; text: root.subtitle; color: #ffffffb8; font-size: (11px * Theme.font-scale); wrap: word-wrap; max-lines: 2; }
-    Rectangle { x: 170px; y: 142px; width: 44px; height: 30px; border-radius: 15px; background: #ffffff22;
-        Icon { name: root.icon; tint: #ffffff; size: 16px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
-    }
+    height: 172px; border-radius: 8px; clip: true;
+    background: @linear-gradient(150deg, accent 0%, Theme.surface 70%, Theme.bg 100%);
+    Cover { x: 14px; y: 14px; width: 144px; height: 144px; art: root.art; accent: root.accent; radius: 6px; icon-size: 44px; }
+    Rectangle { x: 174px; y: 36px; width: 56px; height: 4px; border-radius: 2px; background: #ffffff66; }
+    Text { x: 174px; y: 50px; width: parent.width - 190px; text: root.title; color: #ffffff; font-size: (22px * Theme.font-scale); font-weight: 800; wrap: word-wrap; max-lines: 2; }
+    Text { x: 174px; y: 116px; width: parent.width - 190px; text: root.subtitle; color: #ffffffb8; font-size: (11px * Theme.font-scale); wrap: word-wrap; max-lines: 2; }
     TouchArea { width: 100%; height: 100%; clicked => { App.play-page(); } }
-}
-
-
-component QuickTile inherits Rectangle {
-    in property <string> target: "liked";
-    in property <string> icon: "heart";
-    in property <string> title: "Liked songs";
-    in property <string> sub: "0 tracks";
-    in property <color> accent: Theme.accent;
-    height: 76px;
-    border-radius: 18px;
-    background: Theme.surface;
-    border-width: 1px;
-    border-color: Theme.line;
-    horizontal-stretch: 1;
-    HorizontalLayout {
-        padding-left: 10px; padding-right: 10px;
-        spacing: 10px;
-        Rectangle {
-            width: 40px; height: 40px; border-radius: 12px; background: root.accent;
-            Icon { name: root.icon; tint: #04140a; size: 21px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
-        }
-        VerticalLayout {
-            horizontal-stretch: 1; spacing: 2px; alignment: center;
-            Text { text: root.title; color: Theme.text; font-size: (12.5px * Theme.font-scale); font-weight: 750; overflow: elide; }
-            Text { text: root.sub; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
-        }
-    }
-    TouchArea { width: 100%; height: 100%; clicked => { if (root.target == "queue") { App.navigate("queue"); } else { App.navigate(root.target); } } }
 }
 
 export component LibraryPage inherits Rectangle {
     width: 100%;
     height: 100%;
-    background: transparent;
+    background: Theme.bg;
     VerticalLayout {
         spacing: 0;
+
         Rectangle {
-            height: 68px; background: transparent;
+            height: 60px; background: Theme.bg;
             HorizontalLayout {
-                padding-left: 20px; padding-right: 16px; spacing: 8px;
-                VerticalLayout { horizontal-stretch: 1; spacing: 2px;
-                    Text { text: "Your Library"; color: Theme.text; font-size: (27px * Theme.font-scale); font-weight: 800; }
-                    Text { text: App.liked-count + " liked · " + App.local-count + " local tracks"; color: Theme.text-sub; font-size: (11px * Theme.font-scale); }
-                }
-                IconButton { icon: "add"; tint: #04140a; box: 40px; fill: Theme.accent; clicked => { App.create-playlist(); } }
+                padding-left: 16px; padding-right: 12px; spacing: 6px;
+                Text { text: "Your Library"; color: Theme.text; font-size: (25px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+                IconButton { icon: "add"; tint: Theme.text; box: 38px; clicked => { App.create-playlist(); } }
+                IconButton { icon: "settings"; tint: Theme.text; box: 38px; icon-size: 20px; clicked => { App.navigate("settings"); } }
             }
         }
 
@@ -84,24 +51,11 @@ export component LibraryPage inherits Rectangle {
             min-width: 0px;
             width: 100%; vertical-stretch: 1;
             VerticalLayout {
-                padding-left: 20px; padding-right: 20px; padding-bottom: 24px; spacing: 16px;
+                padding-left: 16px; padding-right: 16px; padding-bottom: 18px; spacing: 14px;
 
-                // Quick tiles — 2 × 2, full labels, equal heights
-                HorizontalLayout {
-                    spacing: 10px;
-                    QuickTile { target: "liked"; icon: "heart"; title: "Liked songs"; sub: App.liked-count + " tracks"; accent: Theme.accent; }
-                    QuickTile { target: "local"; icon: "folder"; title: "My files"; sub: App.local-count + " tracks"; accent: Theme.accent-2; }
-                }
-                HorizontalLayout {
-                    spacing: 10px;
-                    QuickTile { target: "history"; icon: "history"; title: "History"; sub: App.history.length + " recently"; accent: Theme.accent; }
-                    QuickTile { target: "queue"; icon: "queue"; title: "Queue"; sub: App.queue.length + " up next"; accent: Theme.accent-2; }
-                }
-
-                // Filters
                 ScrollView {
                     min-width: 0px;
-                    width: 100%; height: 38px;
+                    width: 100%; height: 32px;
                     HorizontalLayout {
                         spacing: 8px;
                         for f in ["all", "playlists", "albums", "artists", "downloads"] : Chip {
@@ -112,38 +66,36 @@ export component LibraryPage inherits Rectangle {
                     }
                 }
 
-                if App.playlists.length == 0 && App.liked-count == 0 && App.local-count == 0 : Rectangle {
-                    height: 152px; border-radius: 20px; background: Theme.surface; border-width: 1px; border-color: Theme.line;
-                    VerticalLayout {
-                        padding: 18px; spacing: 10px; alignment: center;
-                        Text { text: "Bring your music"; color: Theme.text; font-size: (16px * Theme.font-scale); font-weight: 750; horizontal-alignment: center; }
-                        Text { text: "Scan files on this device or import a playlist from YouTube, SoundCloud or Spotify."; color: Theme.text-sub; font-size: (11px * Theme.font-scale); horizontal-alignment: center; wrap: word-wrap; }
-                        HorizontalLayout {
-                            alignment: center; spacing: 10px;
-                            TextButton { text: "Scan files"; primary: true; compact: true; clicked => { App.scan-library(); } }
-                            TextButton { text: "Import link"; compact: true; clicked => { App.navigate("import"); } }
-                        }
-                    }
-                }
-
                 if App.library-filter == "all" || App.library-filter == "playlists" : VerticalLayout {
-                    spacing: 8px;
-                    SectionTitle { title: "Playlists"; action: "Import"; show-action: true; }
-                    if App.playlists.length == 0 : EmptyCard {
-                        icon: "album"; title: "No playlists yet";
-                        subtitle: "Create a playlist or import one from YouTube, SoundCloud or Spotify.";
+                    spacing: 2px;
+                    SectionTitle { title: "Playlists"; action: "Import"; show-action: false; }
+                    if App.playlists.length == 0 : Rectangle {
+                        height: 78px; border-radius: 8px; background: Theme.surface-2;
+                        HorizontalLayout {
+                            padding: 11px; spacing: 12px;
+                            Rectangle { width: 54px; height: 54px; border-radius: 6px; background: Theme.surface-3;
+                                Icon { name: "add"; tint: Theme.accent; size: 24px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                            }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 2px; alignment: center;
+                                Text { text: "Create your first playlist"; color: Theme.text; font-size: (14px * Theme.font-scale); font-weight: 700; }
+                                Text { text: "It's easy, we'll help you"; color: Theme.text-sub; font-size: (11px * Theme.font-scale); }
+                            }
+                            Icon { name: "chevron-right"; tint: Theme.text-sub; size: 18px; }
+                        }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.create-playlist(); } }
                     }
                     for p in App.playlists : Rectangle {
-                        height: 66px; border-radius: 14px; background: Theme.surface;
+                        height: 64px; border-radius: 6px;
+                        background: transparent;
                         HorizontalLayout {
-                            padding: 8px; spacing: 10px; 
-                            Cover { art: p.art; accent: p.accent; width: 50px; height: 50px; radius: 11px; icon-size: 19px; }
-                            VerticalLayout { horizontal-stretch: 1; spacing: 2px; 
-                                Text { text: p.name; color: Theme.text; font-size: (13.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                            padding-left: 4px; padding-right: 4px; spacing: 11px;
+                            Cover { art: p.art; accent: p.accent; width: 52px; height: 52px; radius: 4px; icon-size: 19px; }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 2px; alignment: center;
+                                Text { text: p.name; color: Theme.text; font-size: (14px * Theme.font-scale); font-weight: 650; overflow: elide; }
                                 Text { text: p.subtitle; color: Theme.text-sub; font-size: (11px * Theme.font-scale); overflow: elide; }
                             }
                             Text { text: p.count + ""; color: Theme.text-faint; font-size: (11px * Theme.font-scale); vertical-alignment: center; }
-                            Icon { name: "more-horizontal"; tint: Theme.text-faint; size: 19px; }
+                            Icon { name: "chevron-right"; tint: Theme.text-faint; size: 16px; }
                         }
                         TouchArea { width: 100%; height: 100%; clicked => { App.open-playlist(p.id); } }
                     }
@@ -152,20 +104,17 @@ export component LibraryPage inherits Rectangle {
                 if App.library-filter == "albums" || (App.library-filter == "all" && App.albums.length > 0) : VerticalLayout {
                     spacing: 8px;
                     SectionTitle { title: "Albums"; action: ""; show-action: false; }
-                    if App.albums.length == 0 : EmptyCard {
-                        icon: "album"; title: "No albums yet";
-                        subtitle: "Albums are created automatically from your liked and local music.";
-                    }
+                    if App.albums.length == 0 : EmptyCard { icon: "album"; title: "No albums yet"; subtitle: "Albums appear automatically from your liked and local music."; }
                     ScrollView {
                         min-width: 0px;
-                        width: 100%; height: 192px;
+                        width: 100%; height: 196px;
                         HorizontalLayout {
                             spacing: 12px;
                             for a in App.albums : Rectangle {
-                                width: 128px; height: 188px; background: transparent;
+                                width: 132px; height: 190px; background: transparent;
                                 VerticalLayout { spacing: 6px;
-                                    Cover { art: a.art; accent: a.accent; width: 128px; height: 128px; radius: 16px; icon-size: 30px; }
-                                    Text { text: a.name; color: Theme.text; font-size: (12.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                                    Cover { art: a.art; accent: a.accent; width: 132px; height: 132px; radius: 6px; icon-size: 30px; }
+                                    Text { text: a.name; color: Theme.text; font-size: (12.5px * Theme.font-scale); font-weight: 650; overflow: elide; }
                                     Text { text: a.subtitle; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
                                 }
                                 TouchArea { width: 100%; height: 100%; clicked => { App.open-album(a.name); } }
@@ -175,20 +124,20 @@ export component LibraryPage inherits Rectangle {
                 }
 
                 if App.library-filter == "artists" || (App.library-filter == "all" && App.library-tracks.length > 0) : VerticalLayout {
-                    spacing: 8px;
+                    spacing: 2px;
                     SectionTitle { title: "Artists"; action: ""; show-action: false; }
                     for t in App.library-tracks : Rectangle {
-                        height: 56px; border-radius: 28px; background: Theme.surface;
+                        height: 64px; background: transparent;
                         HorizontalLayout {
-                            padding-left: 8px; padding-right: 12px; spacing: 10px; 
-                            Rectangle { width: 40px; height: 40px; border-radius: 20px; background: Theme.accent;
-                                Icon { name: "person"; tint: #04140a; size: 20px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
+                            padding-left: 4px; padding-right: 4px; spacing: 12px;
+                            Rectangle { width: 52px; height: 52px; border-radius: 26px; background: Theme.surface-2;
+                                Icon { name: "person"; tint: Theme.text-sub; size: 24px; x: (parent.width - self.width) / 2; y: (parent.height - self.height) / 2; }
                             }
-                            VerticalLayout { horizontal-stretch: 1; spacing: 1px; 
-                                Text { text: t.artist; color: Theme.text; font-size: (13px * Theme.font-scale); font-weight: 700; overflow: elide; }
-                                Text { text: "Artist"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); }
+                            VerticalLayout { horizontal-stretch: 1; spacing: 2px; alignment: center;
+                                Text { text: t.artist; color: Theme.text; font-size: (14px * Theme.font-scale); font-weight: 650; overflow: elide; }
+                                Text { text: "Artist"; color: Theme.text-sub; font-size: (11px * Theme.font-scale); }
                             }
-                            Icon { name: "play"; tint: Theme.accent; size: 18px; }
+                            Icon { name: "chevron-right"; tint: Theme.text-faint; size: 16px; }
                         }
                         TouchArea { width: 100%; height: 100%; clicked => { App.open-artist(t.artist); } }
                     }
@@ -196,7 +145,7 @@ export component LibraryPage inherits Rectangle {
                 }
 
                 if App.library-filter == "downloads" : VerticalLayout {
-                    spacing: 8px;
+                    spacing: 2px;
                     SectionTitle { title: "Downloaded & cached"; action: ""; show-action: false; }
                     for t in App.library-tracks : TrackRow { item: t; }
                 }

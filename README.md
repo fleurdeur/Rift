@@ -12,19 +12,30 @@ by Slint — no Electron, no WebView, no JavaScript runtime.
 - **Home** — daily mix, recent plays, recommendations, quick genres
 - **Search** — Spotify, YouTube and SoundCloud search with a colour-coded browse grid
 - **Library** — liked songs, local files, playlists, albums, artists, downloads
-- **Player** — artwork, synced lyrics, queue, visualizer, sleep timer
-- **Audio editor** — 10-band graphic EQ, compressor, brickwall limiter, bass,
-  reverb, speed/pitch, normalizer, scene presets and saved profiles
-- **Settings** — themes, accent colours, text size, playback quality, Spotify,
-  local scanning, cache and import
+- **Player** — artwork, synced lyrics from several providers, queue, 32-bar
+  visualizer and sleep timer
+- **Audio editor** — 10-band graphic EQ, 25 headphone profiles, 3-band
+  multiband compressor, noise gate, brickwall limiter, bass, reverb,
+  speed/pitch, normalizer, scene presets and saved profiles
+- **Visualizer** — bars, mirror and pulse modes, reachable from both Now
+  Playing and the equalizer card in Settings
+- **Themes** — 118 built-in palettes (including Spotify Dark/Light, AMOLED and
+  every palette from `spicetify/spicetify-themes`), optional dynamic accent and
+  text scaling
+- **Settings** — themes, AMOLED, text size, playback quality, Spotify, local
+  scanning, cache and import
 
 ## Audio
 
 - Local FLAC, WAV, AIFF, ALAC, MP3, OGG, Opus, M4A and AAC via Rodio/Symphonia.
 - 10-band peaking EQ, low-shelf bass, reverb, peak normalizer.
 - Feed-forward compressor with threshold, ratio, attack, release and makeup gain.
-- Transparent brickwall limiter with adjustable ceiling.
+- Three-band multiband compressor with independent thresholds and ratios.
+- Noise gate with threshold and release, plus a transparent brickwall limiter.
+- 25 selectable headphone profiles, from flat/reference to popular models.
 - Saved profiles store the complete signal chain, not just EQ gains.
+- Lyrics resolve from local `.lrc`, a JSON cache, LRCLIB, lyrics.ovh and NetEase,
+  with automatic fallback.
 - Lossless playback is available for local files. Spotify's official API does
   **not** expose full-length or lossless streams to third-party apps, so Spotify
   tracks play as 30-second previews unless Rift finds a matching FLAC/WAV in your
@@ -54,13 +65,23 @@ export ANDROID_NDK_ROOT="$ANDROID_HOME/ndk/26.1.10909125"
 export ANDROID_NDK="$ANDROID_NDK_ROOT"
 export ANDROID_JAR="$ANDROID_HOME/platforms/android-35/android.jar"
 
+# ARM64 (most phones)
 cargo ndk -t arm64-v8a -P 26 -o jniLibs build --release
 ./scripts/package-android.sh
+
+# Universal APK (ARM64 + 32-bit ARMv7)
+cargo ndk -t armeabi-v7a -P 26 -o jniLibs build --release
+RIFT_ABIS="arm64-v8a armeabi-v7a" ./scripts/package-android.sh
 ```
 
-The packaging script uses `aapt2`, `zipalign` and `apksigner` from build-tools
-35.0.0 and produces `target/Rift.apk`. Use your own release keystore for
-distribution; the sample script falls back to the local debug key.
+`cargo ndk -t` takes Android ABI names (`arm64-v8a`, `armeabi-v7a`). The packaging script uses
+`aapt2`, `zipalign` and `apksigner` from build-tools 35.0.0 and produces
+`target/Rift.apk`. Use your own release keystore for distribution; the sample
+script falls back to the local debug key.
+
+> ARMv7 note: prebuilt Skia binaries are currently published only for 64-bit
+> Android. Building ARMv7 compiles Skia from source, so it needs a full NDK
+> toolchain, `libclang` discoverable by bindgen, and roughly 2 GB of free disk.
 
 Desktop preview (development only):
 

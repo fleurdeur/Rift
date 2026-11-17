@@ -1,4 +1,4 @@
-export { App, TrackItem, PlaylistItem, AlbumItem, LyricLine } from "state.slint";
+export { App, TrackItem, PlaylistItem, AlbumItem, LyricLine, ThemeItem } from "state.slint";
 export { Theme } from "theme.slint";
 import { Theme } from "theme.slint";
 import { Icon } from "icons.slint";
@@ -9,7 +9,8 @@ import { SearchPage } from "search.slint";
 import { LibraryPage, TrackListPage, AlbumPage, ArtistPage, PlaylistPage, QueuePage } from "library.slint";
 import { PlayerPage } from "player.slint";
 import { EqPage } from "eq.slint";
-import { SettingsPage, ImportPage, SleepPage } from "settings.slint";
+import { SettingsPage, ImportPage, SleepPage, SpotifyPage } from "settings.slint";
+import { ThemePage } from "themes.slint";
 
 export component AppWindow inherits Window {
     title: "Rift";
@@ -18,8 +19,8 @@ export component AppWindow inherits Window {
     background: Theme.bg;
     default-font-family: "sans-serif";
 
-    property <bool> unused-main-view: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "import" || App.view == "sleep";
-    property <bool> show-chrome: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "import" || App.view == "sleep";
+    property <bool> unused-main-view: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "themes" || App.view == "spotify" || App.view == "import" || App.view == "sleep";
+    property <bool> show-chrome: App.view == "home" || App.view == "search" || App.view == "library" || App.view == "liked" || App.view == "local" || App.view == "albums" || App.view == "history" || App.view == "queue" || App.view == "playlist" || App.view == "album" || App.view == "artist" || App.view == "settings" || App.view == "themes" || App.view == "spotify" || App.view == "import" || App.view == "sleep";
 
     VerticalLayout {
         spacing: 0;
@@ -42,6 +43,8 @@ export component AppWindow inherits Window {
             if App.view == "playlist" : PlaylistPage {}
             if App.view == "queue" : QueuePage {}
             if App.view == "settings" : SettingsPage {}
+            if App.view == "themes" : ThemePage {}
+            if App.view == "spotify" : SpotifyPage {}
             if App.view == "import" : ImportPage {}
             if App.view == "sleep" : SleepPage {}
             if App.view == "eq" : EqPage {}

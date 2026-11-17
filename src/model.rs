@@ -142,6 +142,7 @@ pub struct HistoryEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(default)]
 pub struct EqProfile {
     pub name: String,
     pub gains: [f32; 10],
@@ -158,6 +159,50 @@ pub struct EqProfile {
     pub limiter: bool,
     pub limiter_ceiling: f32,
     pub normalizer: bool,
+    pub gate: bool,
+    pub gate_threshold: f32,
+    pub gate_release: f32,
+    pub mbc: bool,
+    pub mbc_low_threshold: f32,
+    pub mbc_low_ratio: f32,
+    pub mbc_mid_threshold: f32,
+    pub mbc_mid_ratio: f32,
+    pub mbc_high_threshold: f32,
+    pub mbc_high_ratio: f32,
+    pub width: f32,
+}
+
+impl Default for EqProfile {
+    fn default() -> Self {
+        Self {
+            name: "Profile".into(),
+            gains: [0.0; 10],
+            bass: 0.0,
+            reverb: 0.0,
+            speed: 1.0,
+            pitch: 0.0,
+            compressor: false,
+            comp_threshold: -18.0,
+            comp_ratio: 3.0,
+            comp_attack: 12.0,
+            comp_release: 120.0,
+            comp_makeup: 2.0,
+            limiter: true,
+            limiter_ceiling: -1.0,
+            normalizer: false,
+            gate: false,
+            gate_threshold: -55.0,
+            gate_release: 160.0,
+            mbc: false,
+            mbc_low_threshold: -20.0,
+            mbc_low_ratio: 2.5,
+            mbc_mid_threshold: -18.0,
+            mbc_mid_ratio: 2.0,
+            mbc_high_threshold: -16.0,
+            mbc_high_ratio: 2.0,
+            width: 1.0,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -192,11 +237,28 @@ pub struct Settings {
     pub comp_makeup: f32,
     pub limiter: bool,
     pub limiter_ceiling: f32,
+    pub gate: bool,
+    pub gate_threshold: f32,
+    pub gate_release: f32,
+    pub mbc: bool,
+    pub mbc_low_threshold: f32,
+    pub mbc_low_ratio: f32,
+    pub mbc_mid_threshold: f32,
+    pub mbc_mid_ratio: f32,
+    pub mbc_high_threshold: f32,
+    pub mbc_high_ratio: f32,
+    pub width: f32,
     pub profiles: Vec<EqProfile>,
     pub spotify_client_id: String,
     pub spotify_client_secret: String,
     pub spotify_access_token: String,
     pub spotify_token_expires: i64,
+    pub theme_index: usize,
+    pub amoled: bool,
+    pub headphone_index: i32,
+    pub headphone_profile: String,
+    pub visualizer_mode: String,
+    pub eq_tab: String,
 }
 
 impl Default for Settings {
@@ -231,11 +293,28 @@ impl Default for Settings {
             comp_makeup: 2.0,
             limiter: true,
             limiter_ceiling: -1.0,
+            gate: false,
+            gate_threshold: -55.0,
+            gate_release: 160.0,
+            mbc: false,
+            mbc_low_threshold: -20.0,
+            mbc_low_ratio: 2.5,
+            mbc_mid_threshold: -18.0,
+            mbc_mid_ratio: 2.0,
+            mbc_high_threshold: -16.0,
+            mbc_high_ratio: 2.0,
+            width: 1.0,
             profiles: Vec::new(),
             spotify_client_id: String::new(),
             spotify_client_secret: String::new(),
             spotify_access_token: String::new(),
             spotify_token_expires: 0,
+            theme_index: 0,
+            amoled: true,
+            headphone_index: 0,
+            headphone_profile: "Flat / reference".into(),
+            visualizer_mode: "Bars".into(),
+            eq_tab: "Equalizer".into(),
         }
     }
 }

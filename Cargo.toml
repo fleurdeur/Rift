@@ -1,6 +1,6 @@
 [package]
 name = "riff"
-version = "1.0.0"
+version = "1.0.1"
 edition = "2021"
 license = "MIT"
 description = "Rift for Android — a native Rust music player for YouTube, SoundCloud and local audio"
@@ -59,6 +59,6 @@ opt-level = 1
 [package.metadata.android]
 package = "io.github.rootscripts.riff"
 apk_name = "Rift"
-build_targets = ["aarch64-linux-android", "x86_64-linux-android"]
+build_targets = ["aarch64-linux-android", "armv7-linux-androideabi", "x86_64-linux-android"]
 resources = "android/res"
 assets = "assets"

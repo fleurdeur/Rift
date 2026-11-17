@@ -1,0 +1,78 @@
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { Icon } from "icons.slint";
+import { App, ThemeItem } from "state.slint";
+import { IconButton, ToggleSwitch } from "widgets.slint";
+
+export component ThemePage inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: Theme.bg;
+    VerticalLayout {
+        spacing: 0;
+        Rectangle {
+            height: 58px; background: Theme.bg;
+            HorizontalLayout {
+                padding-left: 8px; padding-right: 16px; spacing: 6px;
+                IconButton { icon: "back"; tint: Theme.text; clicked => { App.navigate("settings"); } }
+                Text { text: "Appearance"; color: Theme.text; font-size: (21px * Theme.font-scale); font-weight: 800; horizontal-stretch: 1; vertical-alignment: center; }
+                Icon { name: "sparkle"; tint: Theme.accent; size: 20px; }
+            }
+        }
+        ScrollView {
+            min-width: 0px;
+            width: 100%; vertical-stretch: 1;
+            VerticalLayout {
+                padding-left: 16px; padding-right: 16px; padding-bottom: 20px;
+                spacing: 12px;
+
+                Rectangle {
+                    height: 62px; border-radius: 8px; background: Theme.surface;
+                    HorizontalLayout {
+                        padding-left: 12px; padding-right: 12px; spacing: 10px;
+                        Icon { name: "moon"; tint: Theme.accent; size: 19px; }
+                        VerticalLayout { horizontal-stretch: 1; min-width: 0px; spacing: 1px; alignment: center;
+                            Text { text: "AMOLED black"; color: Theme.text; font-size: (13.5px * Theme.font-scale); font-weight: 650; }
+                            Text { text: "Pure black backgrounds, made for OLED"; color: Theme.text-sub; font-size: (10.5px * Theme.font-scale); overflow: elide; }
+                        }
+                        ToggleSwitch { checked: App.amoled; toggled(v) => { App.set-amoled(v); } }
+                    }
+                }
+
+                Text { text: "SPICETIFY PALETTES"; color: Theme.text-sub; font-size: (10px * Theme.font-scale); font-weight: 800; letter-spacing: 1.2px; }
+                Text { text: App.theme-list.length + " color schemes · palette data only, layouts stay native"; color: Theme.text-faint; font-size: (10px * Theme.font-scale); wrap: word-wrap; }
+
+                for row in 59 : HorizontalLayout {
+                    spacing: 8px;
+                    for col in 2 : Rectangle {
+                        property <int> idx: row * 2 + col;
+                        property <ThemeItem> item: idx < App.theme-list.length ? App.theme-list[idx] : App.theme-list[0];
+                        visible: idx < App.theme-list.length;
+                        height: 94px;
+                        horizontal-stretch: 1;
+                        min-width: 0px;
+                        border-radius: 8px;
+                        background: idx < App.theme-list.length ? item.bg : Theme.bg;
+                        border-width: App.theme-index == idx ? 2px : 1px;
+                        border-color: App.theme-index == idx ? item.accent : Theme.line;
+                        clip: true;
+                        VerticalLayout {
+                            padding: 8px; spacing: 4px;
+                            Rectangle { height: 26px; border-radius: 5px; background: item.surface; }
+                            HorizontalLayout { spacing: 4px;
+                                Rectangle { width: 24px; height: 6px; border-radius: 3px; background: item.accent; }
+                                Rectangle { width: 10px; height: 6px; border-radius: 3px; background: item.text; }
+                                Rectangle { horizontal-stretch: 1; height: 6px; border-radius: 3px; background: item.sub; }
+                            }
+                            Text { text: item.group; color: item.sub; font-size: (9px * Theme.font-scale); overflow: elide; }
+                            Text { text: item.name; color: item.text; font-size: (11.5px * Theme.font-scale); font-weight: 700; overflow: elide; }
+                        }
+                        TouchArea { width: 100%; height: 100%; clicked => { App.set-theme(idx); } }
+                    }
+                }
+
+                Rectangle { height: 8px; }
+            }
+        }
+    }
+}

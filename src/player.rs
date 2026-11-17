@@ -70,6 +70,16 @@ pub struct Dynamics {
     pub makeup: f32,
     pub limiter: bool,
     pub ceiling: f32,
+    pub gate: bool,
+    pub gate_threshold: f32,
+    pub gate_release_ms: f32,
+    pub mbc: bool,
+    pub mbc_low_threshold: f32,
+    pub mbc_low_ratio: f32,
+    pub mbc_mid_threshold: f32,
+    pub mbc_mid_ratio: f32,
+    pub mbc_high_threshold: f32,
+    pub mbc_high_ratio: f32,
 }
 
 impl Default for Dynamics {
@@ -83,6 +93,16 @@ impl Default for Dynamics {
             makeup: 2.0,
             limiter: true,
             ceiling: -1.0,
+            gate: false,
+            gate_threshold: -55.0,
+            gate_release_ms: 160.0,
+            mbc: false,
+            mbc_low_threshold: -20.0,
+            mbc_low_ratio: 2.5,
+            mbc_mid_threshold: -18.0,
+            mbc_mid_ratio: 2.0,
+            mbc_high_threshold: -16.0,
+            mbc_high_ratio: 2.0,
         }
     }
 }
@@ -510,6 +530,12 @@ pub struct EqSource {
     comp_env: f32,
     comp_gain: f32,
     lim_env: f32,
+    gate_env: f32,
+    gate_gain: f32,
+    low_lp: f32,
+    high_lp: f32,
+    mbc_env: [f32; 3],
+    mbc_gain: [f32; 3],
     dyn_state: Dynamics,
 }
 
@@ -559,6 +585,12 @@ impl EqSource {
             comp_env: 0.0,
             comp_gain: 1.0,
             lim_env: 0.0,
+            gate_env: 0.0,
+            gate_gain: 1.0,
+            low_lp: 0.0,
+            high_lp: 0.0,
+            mbc_env: [0.0; 3],
+            mbc_gain: [1.0; 3],
             dyn_state: Dynamics::default(),
         }
     }
@@ -668,6 +700,54 @@ impl Iterator for EqSource {
             .lock()
             .map(|f| f.dynamics)
             .unwrap_or_default();
+        if dyn_settings.gate {
+            let env_abs = x.abs();
+            let atk = (-1.0 / (0.008 * self.sample_rate)).exp();
+            let rel = (-1.0 / (dyn_settings.gate_release_ms.max(20.0) * 0.001 * self.sample_rate)).exp();
+            let coef = if env_abs > self.gate_env { atk } else { rel };
+            self.gate_env = coef * self.gate_env + (1.0 - coef) * env_abs;
+            let thr = 10f32.powf(dyn_settings.gate_threshold.min(0.0) / 20.0);
+            let target = if self.gate_env < thr { 0.0 } else { 1.0 };
+            let gcoef = if target < self.gate_gain { atk } else { rel };
+            self.gate_gain = gcoef * self.gate_gain + (1.0 - gcoef) * target;
+            x *= self.gate_gain;
+        } else {
+            self.gate_gain = 1.0;
+        }
+        if dyn_settings.mbc {
+            // Three-band Linkwitz-Riley-ish split with per-band compression.
+            let a_low = 1.0 - (-2.0 * std::f32::consts::PI * 200.0 / self.sample_rate).exp();
+            let a_high = 1.0 - (-2.0 * std::f32::consts::PI * 2000.0 / self.sample_rate).exp();
+            self.low_lp += a_low * (x - self.low_lp);
+            self.high_lp += a_high * (x - self.high_lp);
+            let low = self.low_lp;
+            let mid = self.high_lp - self.low_lp;
+            let high = x - self.high_lp;
+            let bands = [low, mid, high];
+            let params = [
+                (dyn_settings.mbc_low_threshold, dyn_settings.mbc_low_ratio),
+                (dyn_settings.mbc_mid_threshold, dyn_settings.mbc_mid_ratio),
+                (dyn_settings.mbc_high_threshold, dyn_settings.mbc_high_ratio),
+            ];
+            let mut sum = 0.0;
+            for i in 0..3 {
+                let b = bands[i];
+                let (thr, ratio) = params[i];
+                let env_abs = b.abs();
+                let atk = (-1.0 / (0.012 * self.sample_rate)).exp();
+                let rel = (-1.0 / (0.12 * self.sample_rate)).exp();
+                let coef = if env_abs > self.mbc_env[i] { atk } else { rel };
+                self.mbc_env[i] = coef * self.mbc_env[i] + (1.0 - coef) * env_abs;
+                let env_db = 20.0 * self.mbc_env[i].max(1e-6).log10();
+                let over = env_db - thr;
+                let target_db = if over > 0.0 { -over * (1.0 - 1.0 / ratio.max(1.0)) } else { 0.0 };
+                let target = 10f32.powf(target_db / 20.0);
+                let gcoef = if target < self.mbc_gain[i] { atk } else { rel };
+                self.mbc_gain[i] = gcoef * self.mbc_gain[i] + (1.0 - gcoef) * target;
+                sum += b * self.mbc_gain[i];
+            }
+            x = sum;
+        }
         if dyn_settings.compressor {
             let env_abs = x.abs();
             let attack = (-1.0 / (dyn_settings.attack_ms.max(0.5) * 0.001 * self.sample_rate)).exp();

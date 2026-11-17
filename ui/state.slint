@@ -32,6 +32,17 @@ export struct AlbumItem {
     count: int,
 }
 
+export struct ThemeItem {
+    group: string,
+    name: string,
+    accent: color,
+    bg: color,
+    surface: color,
+    text: color,
+    sub: color,
+    light: bool,
+}
+
 export struct LyricLine {
     time: int,
     text: string,
@@ -96,7 +107,23 @@ export global App {
     in-out property <float> limiter-ceiling: -1;
     in-out property <[string]> eq-profiles;
     in-out property <bool> visualizer-on: true;
+    in-out property <string> visualizer-mode: "Bars";
     in-out property <[float]> spectrum;
+    in-out property <bool> gate: false;
+    in-out property <float> gate-threshold: -55;
+    in-out property <float> gate-release: 160;
+    in-out property <bool> mbc: false;
+    in-out property <float> mbc-low-threshold: -20;
+    in-out property <float> mbc-low-ratio: 2.5;
+    in-out property <float> mbc-mid-threshold: -18;
+    in-out property <float> mbc-mid-ratio: 2;
+    in-out property <float> mbc-high-threshold: -16;
+    in-out property <float> mbc-high-ratio: 2;
+    in-out property <string> eq-tab: "Equalizer";
+    in-out property <[string]> headphone-profiles;
+    in-out property <int> headphone-index: 0;
+    in-out property <string> headphone-profile: "Flat / reference";
+    in-out property <string> lyrics-source: "";
     in-out property <int> sleep-minutes: 0;
     in-out property <int> sleep-remaining: 0;
     in-out property <bool> show-lyrics: false;
@@ -135,6 +162,9 @@ export global App {
     // Theme
     in-out property <bool> theme-light: false;
     in-out property <bool> dynamic-color: true;
+    in-out property <bool> amoled: true;
+    in-out property <int> theme-index: 0;
+    in-out property <[ThemeItem]> theme-list;
     in-out property <int> accent-index: 0;
     in-out property <float> font-scale: 1.0;
     in-out property <[color]> accents: [
@@ -185,6 +215,15 @@ export global App {
     callback set-comp-makeup(float);
     callback set-limiter(bool);
     callback set-limiter-ceiling(float);
+    callback set-gate(bool);
+    callback set-gate-threshold(float);
+    callback set-gate-release(float);
+    callback set-mbc(bool);
+    callback set-mbc-band(int, float, float);
+    callback set-visualizer-mode(string);
+    callback apply-headphone(int);
+    callback set-theme(int);
+    callback set-amoled(bool);
     callback save-profile();
     callback apply-profile(int);
     callback set-spotify-client-id(string);

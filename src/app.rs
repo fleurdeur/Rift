@@ -3,8 +3,8 @@ use crate::paths;
 use crate::player::{Cmd as PlayerCmd, Dynamics, PlayerHandle};
 use crate::sources;
 use crate::{
-    android, images, library, lyrics, AlbumItem, App, AppWindow, LyricLine, PlaylistItem, Theme,
-    TrackItem,
+    android, audio_presets, images, library, lyrics, themes, AlbumItem, App, AppWindow,
+    LyricLine, PlaylistItem, Theme, ThemeItem, TrackItem,
 };
 use slint::{ComponentHandle, Model, ModelRc, VecModel};
 use std::collections::HashMap;
@@ -19,6 +19,8 @@ pub struct AppState {
     pub spectrum: Vec<f32>,
     pub lyrics_ui: Mutex<Option<(String, usize, usize)>>, // track, line count, active
     pub home_loading: Arc<Mutex<bool>>,
+    pub theme_applied: Mutex<Option<(usize, bool)>>,
+    pub lyrics_source: Mutex<String>,
 }
 
 impl AppState {
@@ -29,6 +31,8 @@ impl AppState {
             spectrum: vec![0.0; 32],
             lyrics_ui: Mutex::new(None),
             home_loading: Arc::new(Mutex::new(false)),
+            theme_applied: Mutex::new(None),
+            lyrics_source: Mutex::new(String::new()),
         })
     }
 }
@@ -95,6 +99,10 @@ pub fn run() -> anyhow::Result<()> {
     }
 
     let ui = AppWindow::new()?;
+    {
+        let c = state.core.lock().unwrap();
+        apply_theme(&ui, &c.settings);
+    }
     setup_callbacks(&ui, state.clone());
     refresh(&ui, &state);
     start_timer(ui.as_weak(), state.clone());
@@ -820,6 +828,17 @@ fn setup_callbacks(ui: &AppWindow, state: Arc<AppState>) {
                     limiter: c.settings.limiter,
                     limiter_ceiling: c.settings.limiter_ceiling,
                     normalizer: c.settings.normalizer,
+                    gate: c.settings.gate,
+                    gate_threshold: c.settings.gate_threshold,
+                    gate_release: c.settings.gate_release,
+                    mbc: c.settings.mbc,
+                    mbc_low_threshold: c.settings.mbc_low_threshold,
+                    mbc_low_ratio: c.settings.mbc_low_ratio,
+                    mbc_mid_threshold: c.settings.mbc_mid_threshold,
+                    mbc_mid_ratio: c.settings.mbc_mid_ratio,
+                    mbc_high_threshold: c.settings.mbc_high_threshold,
+                    mbc_high_ratio: c.settings.mbc_high_ratio,
+                    width: c.settings.width,
                 };
                 c.settings.profiles.push(p);
                 if c.settings.profiles.len() > 8 {
@@ -854,6 +873,17 @@ fn setup_callbacks(ui: &AppWindow, state: Arc<AppState>) {
                 c.settings.limiter = p.limiter;
                 c.settings.limiter_ceiling = p.limiter_ceiling;
                 c.settings.normalizer = p.normalizer;
+                c.settings.gate = p.gate;
+                c.settings.gate_threshold = p.gate_threshold;
+                c.settings.gate_release = p.gate_release;
+                c.settings.mbc = p.mbc;
+                c.settings.mbc_low_threshold = p.mbc_low_threshold;
+                c.settings.mbc_low_ratio = p.mbc_low_ratio;
+                c.settings.mbc_mid_threshold = p.mbc_mid_threshold;
+                c.settings.mbc_mid_ratio = p.mbc_mid_ratio;
+                c.settings.mbc_high_threshold = p.mbc_high_threshold;
+                c.settings.mbc_high_ratio = p.mbc_high_ratio;
+                c.settings.width = p.width;
                 let eff = p.speed * 2f32.powf(p.pitch / 12.0);
                 state.player.send(PlayerCmd::Eq(p.gains));
                 state.player.send(PlayerCmd::Speed(eff));
@@ -1147,6 +1177,107 @@ fn setup_callbacks(ui: &AppWindow, state: Arc<AppState>) {
             android::open_url(&url);
         });
     }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_theme(move |idx| {
+            {
+                let mut c = state.core.lock().unwrap();
+                c.settings.theme_index = idx.max(0) as usize;
+                c.save_settings(paths::paths());
+            }
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_amoled(move |on| {
+            {
+                let mut c = state.core.lock().unwrap();
+                c.settings.amoled = on;
+                c.save_settings(paths::paths());
+            }
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_apply_headphone(move |idx| {
+            let i = idx.max(0) as usize;
+            if let Some(p) = audio_presets::HEADPHONE_PROFILES.get(i) {
+                {
+                    let mut c = state.core.lock().unwrap();
+                    c.settings.headphone_index = i as i32;
+                    c.settings.headphone_profile = p.name.to_string();
+                    c.settings.eq_gains = p.gains;
+                    c.settings.bass = p.bass;
+                    c.settings.eq_preset = -1;
+                    c.save_settings(paths::paths());
+                    state.player.send(PlayerCmd::Eq(p.gains));
+                    state.player.send(PlayerCmd::Bass(p.bass));
+                }
+                refresh_weak(&weak, &state);
+            }
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_visualizer_mode(move |mode| {
+            {
+                let mut c = state.core.lock().unwrap();
+                c.settings.visualizer_mode = mode.to_string();
+                c.save_settings(paths::paths());
+            }
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_gate(move |on| {
+            update_dyn(&state, |s| s.gate = on);
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_gate_threshold(move |v| {
+            update_dyn(&state, |s| s.gate_threshold = v);
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_gate_release(move |v| {
+            update_dyn(&state, |s| s.gate_release = v);
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_mbc(move |on| {
+            update_dyn(&state, |s| s.mbc = on);
+            refresh_weak(&weak, &state);
+        });
+    }
+    {
+        let state = state.clone();
+        let weak = ui.as_weak();
+        app.on_set_mbc_band(move |band, threshold, ratio| {
+            update_dyn(&state, |s| match band {
+                0 => { s.mbc_low_threshold = threshold; s.mbc_low_ratio = ratio; }
+                1 => { s.mbc_mid_threshold = threshold; s.mbc_mid_ratio = ratio; }
+                _ => { s.mbc_high_threshold = threshold; s.mbc_high_ratio = ratio; }
+            });
+            refresh_weak(&weak, &state);
+        });
+    }
 }
 
 fn refresh_weak(weak: &slint::Weak<AppWindow>, state: &Arc<AppState>) {
@@ -1186,19 +1317,24 @@ fn refresh(ui: &AppWindow, state: &Arc<AppState>) {
     let app = ui.global::<App>();
     let theme = ui.global::<Theme>();
 
-    let accent = if c.settings.dynamic {
-        c.current
+    let theme_index = c.settings.theme_index.min(themes::THEMES.len().saturating_sub(1));
+    app.set_theme_index(theme_index as i32);
+    app.set_amoled(c.settings.amoled);
+    let theme_key = (theme_index, c.settings.amoled);
+    let theme_changed = *state.theme_applied.lock().unwrap() != Some(theme_key);
+    if theme_changed {
+        apply_theme(ui, &c.settings);
+        *state.theme_applied.lock().unwrap() = Some(theme_key);
+    }
+    if c.settings.dynamic {
+        let accent = c
+            .current
             .as_ref()
             .and_then(|id| c.tracks.get(id))
             .map(|t| t.accent.clone())
-            .unwrap_or_else(|| ACCENTS[c.settings.accent_index % ACCENTS.len()].to_string())
-    } else {
-        ACCENTS[c.settings.accent_index % ACCENTS.len()].to_string()
-    };
-    let accent2 = ACCENTS[(c.settings.accent_index + 5) % ACCENTS.len()];
-    theme.set_light(c.settings.theme_light);
-    theme.set_accent(images::color_from_hex(&accent));
-    theme.set_accent_2(images::color_from_hex(accent2));
+            .unwrap_or_else(|| themes::THEMES[theme_index].accent.to_string());
+        theme.set_accent(images::color_from_hex(&accent));
+    }
     theme.set_font_scale(c.settings.font_scale);
     theme.set_dynamic(c.settings.dynamic);
 
@@ -1256,6 +1392,43 @@ fn refresh(ui: &AppWindow, state: &Arc<AppState>) {
     app.set_eq_profiles(ModelRc::new(VecModel::from(
         c.settings.profiles.iter().map(|p| slint::SharedString::from(p.name.as_str())).collect::<Vec<_>>(),
     )));
+    if app.get_theme_list().row_count() == 0 {
+        let list: Vec<ThemeItem> = themes::THEMES
+            .iter()
+            .map(|t| ThemeItem {
+                group: t.group.into(),
+                name: t.name.into(),
+                accent: images::color_from_hex(t.accent),
+                bg: images::color_from_hex(t.bg),
+                surface: images::color_from_hex(t.surface),
+                text: images::color_from_hex(t.text),
+                sub: images::color_from_hex(t.sub),
+                light: t.light,
+            })
+            .collect();
+        app.set_theme_list(ModelRc::new(VecModel::from(list)));
+    }
+    app.set_headphone_profiles(ModelRc::new(VecModel::from(
+        audio_presets::HEADPHONE_PROFILES
+            .iter()
+            .map(|p| slint::SharedString::from(p.name))
+            .collect::<Vec<_>>(),
+    )));
+    app.set_headphone_index(c.settings.headphone_index);
+    app.set_headphone_profile(c.settings.headphone_profile.clone().into());
+    app.set_visualizer_mode(c.settings.visualizer_mode.clone().into());
+    app.set_eq_tab(c.settings.eq_tab.clone().into());
+    app.set_lyrics_source(state.lyrics_source.lock().unwrap().clone().into());
+    app.set_gate(c.settings.gate);
+    app.set_gate_threshold(c.settings.gate_threshold);
+    app.set_gate_release(c.settings.gate_release);
+    app.set_mbc(c.settings.mbc);
+    app.set_mbc_low_threshold(c.settings.mbc_low_threshold);
+    app.set_mbc_low_ratio(c.settings.mbc_low_ratio);
+    app.set_mbc_mid_threshold(c.settings.mbc_mid_threshold);
+    app.set_mbc_mid_ratio(c.settings.mbc_mid_ratio);
+    app.set_mbc_high_threshold(c.settings.mbc_high_threshold);
+    app.set_mbc_high_ratio(c.settings.mbc_high_ratio);
     app.set_spotify_client_id(c.settings.spotify_client_id.clone().into());
     app.set_spotify_client_secret(c.settings.spotify_client_secret.clone().into());
     let spotify_ok = !c.settings.spotify_access_token.is_empty()
@@ -1534,6 +1707,54 @@ fn model_art(page_id: &str, tracks: &HashMap<String, Track>) -> slint::Image {
     slint::Image::default()
 }
 
+fn mix_hex(a: &str, b: &str, t: f32) -> String {
+    let (ar, ag, ab) = accent_rgb(a);
+    let (br, bg, bb) = accent_rgb(b);
+    let t = t.clamp(0.0, 1.0);
+    format!(
+        "#{:02x}{:02x}{:02x}",
+        (ar as f32 + (br as f32 - ar as f32) * t) as u8,
+        (ag as f32 + (bg as f32 - ag as f32) * t) as u8,
+        (ab as f32 + (bb as f32 - ab as f32) * t) as u8
+    )
+}
+
+fn apply_theme(ui: &AppWindow, settings: &Settings) {
+    let theme = ui.global::<Theme>();
+    let preset = &themes::THEMES[settings.theme_index.min(themes::THEMES.len().saturating_sub(1))];
+    let (bg, surface, nav) = if settings.amoled {
+        ("#000000", "#0a0a0a", "#000000")
+    } else {
+        (preset.bg, preset.surface, preset.bg)
+    };
+    let text = preset.text;
+    let sub = preset.sub;
+    let surface2 = mix_hex(surface, text, 0.07);
+    let surface3 = mix_hex(surface, text, 0.14);
+    let line = mix_hex(bg, text, 0.17);
+    let faint = mix_hex(sub, bg, 0.30);
+    let accent = preset.accent;
+    let accent2 = mix_hex(accent, text, 0.18);
+    theme.set_light(preset.light);
+    theme.set_amoled(settings.amoled);
+    theme.set_bg(images::color_from_hex(bg));
+    theme.set_bg_elevated(images::color_from_hex(surface));
+    theme.set_surface(images::color_from_hex(surface));
+    theme.set_surface_2(images::color_from_hex(&surface2));
+    theme.set_surface_3(images::color_from_hex(&surface3));
+    theme.set_line(images::color_from_hex(&line));
+    theme.set_text(images::color_from_hex(text));
+    theme.set_text_sub(images::color_from_hex(sub));
+    theme.set_text_faint(images::color_from_hex(&faint));
+    theme.set_nav(images::color_from_hex(nav));
+    theme.set_accent(images::color_from_hex(accent));
+    theme.set_accent_2(images::color_from_hex(&accent2));
+    theme.set_danger(images::color_from_hex("#ff4d6d"));
+    theme.set_success(images::color_from_hex("#1ed760"));
+    theme.set_font_scale(settings.font_scale);
+    theme.set_dynamic(settings.dynamic);
+}
+
 fn send_dynamics(c: &Core, player: &PlayerHandle) {
     player.send(PlayerCmd::Dynamics(Dynamics {
         compressor: c.settings.compressor,
@@ -1544,6 +1765,16 @@ fn send_dynamics(c: &Core, player: &PlayerHandle) {
         makeup: c.settings.comp_makeup,
         limiter: c.settings.limiter,
         ceiling: c.settings.limiter_ceiling,
+        gate: c.settings.gate,
+        gate_threshold: c.settings.gate_threshold,
+        gate_release_ms: c.settings.gate_release,
+        mbc: c.settings.mbc,
+        mbc_low_threshold: c.settings.mbc_low_threshold,
+        mbc_low_ratio: c.settings.mbc_low_ratio,
+        mbc_mid_threshold: c.settings.mbc_mid_threshold,
+        mbc_mid_ratio: c.settings.mbc_mid_ratio,
+        mbc_high_threshold: c.settings.mbc_high_threshold,
+        mbc_high_ratio: c.settings.mbc_high_ratio,
     }));
 }
 
@@ -1638,11 +1869,6 @@ const GENRES: [&str; 8] = [
     "Pop",
     "Rock",
     "Late night",
-];
-
-const ACCENTS: [&str; 10] = [
-    "#1db954", "#1ed760", "#8b7bff", "#ff6b9d", "#ff8a5c", "#ffd166", "#48d597", "#4fd1c5",
-    "#54a9ff", "#b47cff",
 ];
 
 fn start_timer(weak: slint::Weak<AppWindow>, state: Arc<AppState>) {
@@ -2175,8 +2401,9 @@ fn load_lyrics_for(state: &Arc<AppState>, weak: &slint::Weak<AppWindow>, id: Str
     let state2 = state.clone();
     let weak2 = weak.clone();
     std::thread::spawn(move || {
-        match lyrics::load_for_track(&track) {
-            Ok(lines) => {
+        match lyrics::load_for_track_with_source(&track) {
+            Ok((lines, source)) => {
+                *state2.lyrics_source.lock().unwrap() = source.to_string();
                 let mut c = state2.core.lock().unwrap();
                 if c.current.as_deref() == Some(track.id.as_str()) {
                     c.lyrics = lines;
